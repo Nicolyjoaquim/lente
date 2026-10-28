@@ -4,6 +4,7 @@
 
 const TICKER = /^[A-Z]{4}\d{1,2}$/;
 const MAX_TICKERS = 5;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export default async (req) => {
   const url = new URL(req.url);
@@ -22,41 +23,52 @@ export default async (req) => {
     return json({ error: "BRAPI_TOKEN não configurado no Netlify" }, 500);
   }
 
-  // O plano gratuito da brapi aceita 1 ticker por chamada, então fazemos uma por empresa.
-  const results = await Promise.all(
-    tickers.map(async (t) => {
-      try {
-        const r = await fetch(`https://brapi.dev/api/quote/${t}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!r.ok) return [t, { error: `brapi respondeu ${r.status}` }];
-        const d = await r.json();
-        const q = d && d.results && d.results[0];
-        if (!q || typeof q.regularMarketPrice !== "number") return [t, { error: "sem cotação" }];
-        return [
-          t,
-          {
-            price: q.regularMarketPrice,
-            changePct: typeof q.regularMarketChangePercent === "number" ? q.regularMarketChangePercent : null,
-            marketCap: typeof q.marketCap === "number" ? q.marketCap : null,
-            time: q.regularMarketTime || null,
-          },
-        ];
-      } catch (e) {
-        return [t, { error: "falha de conexão com a brapi" }];
-      }
-    })
-  );
+  // O plano gratuito da brapi aceita 1 ticker por chamada e pode recusar pedidos simultâneos,
+  // então buscamos uma empresa por vez e tentamos de novo uma vez se falhar.
+  const quotes = {};
+  for (const t of tickers) {
+    let q = await getQuote(t, token);
+    if (q.error) {
+      await sleep(400);
+      q = await getQuote(t, token);
+    }
+    quotes[t] = q;
+  }
 
-  return json({ source: "brapi.dev", fetchedAt: new Date().toISOString(), quotes: Object.fromEntries(results) }, 200, true);
+  const complete = Object.values(quotes).every((q) => !q.error);
+  return json({ source: "brapi.dev", fetchedAt: new Date().toISOString(), complete, quotes }, 200, complete);
 };
+
+async function getQuote(t, token) {
+  try {
+    const r = await fetch(`https://brapi.dev/api/quote/${t}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!r.ok) return { error: `brapi respondeu ${r.status}` };
+    const d = await r.json();
+    const q = d && d.results && d.results[0];
+    if (!q || typeof q.regularMarketPrice !== "number") return { error: "sem cotação" };
+    return {
+      price: q.regularMarketPrice,
+      changePct: typeof q.regularMarketChangePercent === "number" ? q.regularMarketChangePercent : null,
+      marketCap: typeof q.marketCap === "number" ? q.marketCap : null,
+      time: q.regularMarketTime || null,
+    };
+  } catch (e) {
+    return { error: "falha de conexão com a brapi" };
+  }
+}
 
 function json(body, status = 200, cache = false) {
   const headers = { "Content-Type": "application/json; charset=utf-8" };
-  // Guarda a resposta no CDN do Netlify por 30 min para economizar a cota da brapi.
   if (cache) {
+    // Resposta completa: guarda no CDN do Netlify por 30 min para economizar a cota da brapi.
     headers["Netlify-CDN-Cache-Control"] = "public, durable, s-maxage=1800, stale-while-revalidate=600";
     headers["Netlify-Vary"] = "query=tickers";
+  } else {
+    // Resposta incompleta ou erro: nunca guardar, para a próxima visita tentar de novo.
+    headers["Cache-Control"] = "no-store";
+    headers["Netlify-CDN-Cache-Control"] = "no-store";
   }
   return new Response(JSON.stringify(body), { status, headers });
 }

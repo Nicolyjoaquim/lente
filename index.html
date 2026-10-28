@@ -715,8 +715,10 @@ function priceLabel(c){
 function priceSource(c){
   if(c.live){const t=c.live.time?new Date(c.live.time):null;const h=t&&!isNaN(t)?t.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
     return `Fonte: API brapi.dev${h?' · cotação de '+h:''} (atraso de ~30 min). Todos os múltiplos e cenários usam este preço.`;}
+  if(c.diverge) return `Checagem de consistência: a API brapi.dev trouxe ${brl(c.diverge.price)} (${spct(c.diverge.price/c.diverge.base-1)} sobre a base). A diferença é grande demais para o período, então mantivemos a cotação coletada manualmente em 22/10/2026 até conferir a fonte.`;
   if(c.builtin&&LIVE.status==='fail') return 'Fonte: cotação coletada manualmente em 22/10/2026 (a API de cotações está indisponível agora).';
   if(c.builtin&&LIVE.status==='loading') return 'Buscando a cotação ao vivo…';
+  if(c.builtin&&LIVE.status==='ok') return 'Fonte: cotação coletada manualmente em 22/10/2026 (a cotação ao vivo desta empresa não chegou agora; recarregue em alguns minutos).';
   return 'Fonte: cotação coletada manualmente em 22/10/2026.';
 }
 function heroCo(c,A,V){
@@ -934,24 +936,31 @@ async function castVote(t,k){
 
 /* ---------- cotações ao vivo: API brapi.dev via Netlify Function (token fica no servidor) ---------- */
 let LIVE={status:'loading'};
+const MAX_DIVERGE=0.25; // acima de 25% de diferença para a base, o preço vai para conferência em vez de recalcular tudo
 function applyQuotes(q){
   let n=0;
   COS.forEach(c=>{if(!c.builtin)return;const x=q&&q[c.ticker];
-    if(x&&typeof x.price==='number'&&x.price>0){if(c.m.px0==null)c.m.px0=c.m.px;c.m.px=x.price;c.live=x;n++;}});
+    if(c.m.px0==null)c.m.px0=c.m.px;
+    c.m.px=c.m.px0;c.live=null;c.diverge=null;
+    if(!(x&&typeof x.price==='number'&&x.price>0))return;
+    n++;
+    if(Math.abs(x.price/c.m.px0-1)>MAX_DIVERGE){c.diverge={price:x.price,base:c.m.px0};return;}
+    c.m.px=x.price;c.live=x;});
   return n;
 }
+const isComplete=q=>COS.filter(c=>c.builtin).every(c=>q&&q[c.ticker]&&typeof q[c.ticker].price==='number');
 (async()=>{
-  await null; const KEY='lente-cotacoes',TTL=30*60*1000;
+  await null; const KEY='lente-cotacoes-v2',TTL=30*60*1000;
   try{const s=JSON.parse(localStorage.getItem(KEY)||'null');
-    if(s&&Date.now()-s.at<TTL&&applyQuotes(s.quotes)){LIVE={status:'ok'};keep(()=>render());return;}}catch(e){}
+    if(s&&Date.now()-s.at<TTL&&isComplete(s.quotes)){applyQuotes(s.quotes);LIVE={status:'ok'};keep(()=>render());return;}}catch(e){}
   try{
     const tk=COS.filter(c=>c.builtin).map(c=>c.ticker).join(',');
-    const r=await fetch('/.netlify/functions/cotacao?tickers='+encodeURIComponent(tk));
+    const r=await fetch('/.netlify/functions/cotacao?tickers='+tk);
     if(!r.ok)throw new Error('HTTP '+r.status);
     const d=await r.json();
     if(!applyQuotes(d.quotes))throw new Error('sem cotações');
     LIVE={status:'ok'};
-    try{localStorage.setItem(KEY,JSON.stringify({at:Date.now(),quotes:d.quotes}));}catch(e){}
+    if(isComplete(d.quotes)){try{localStorage.setItem(KEY,JSON.stringify({at:Date.now(),quotes:d.quotes}));}catch(e){}}
   }catch(e){LIVE={status:'fail'};}
   keep(()=>render());
 })();
