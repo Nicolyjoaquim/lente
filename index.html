@@ -1,0 +1,970 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Lente Research</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: app de bolso — fundo lavanda, cartão-destaque em gradiente roxo, cartões brancos arredondados empilhados, navegação inferior por telas. */
+:root{
+  --bg:#F3F1FA; --card:#FFFFFF; --ink:#1B1530; --ink-2:#433C5E; --muted:#7A7495; --hair:#E8E4F4; --tint:#F1EEFB;
+  --p1:#5A3FD6; --p2:#7E5FF7; --p-soft:#ECE6FE; --on-p:#FFFFFF; --p-ink:#5A3FD6;
+  --q:#E89A16; --q-soft:#FDF0D8; --j:#3B76F0; --j-soft:#E3ECFE; --d:#EE4B63; --d-soft:#FDE3E7; --n:#8A84A6;
+  --good:#16A06D; --good-soft:#DDF4EA; --bad:#E5484D; --bad-soft:#FDE4E4;
+  --i1:#3B82F6; --i2:#EF4444; --i3:#22C55E; --i4:#8B5CF6; --i5:#F59E0B; --i6:#EC4899;
+  --f:"Plus Jakarta Sans",-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --r:22px; --shadow:0 1px 2px rgba(27,21,48,.04),0 8px 24px rgba(27,21,48,.05);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#120F1F; --card:#1C1830; --ink:#F2EFFB; --ink-2:#CFC9E6; --muted:#A49DC2; --hair:#2E2847; --tint:#241F3B;
+  --p-soft:#2C2452; --p-ink:#A792FF;
+  --q:#F5B544; --q-soft:#3A2C10; --j:#79A3FF; --j-soft:#1D2A4F; --d:#FF7489; --d-soft:#42182A; --n:#9C96B8;
+  --good:#4FD39B; --good-soft:#12352A; --bad:#FF7A7E; --bad-soft:#42191C;
+  --shadow:0 1px 2px rgba(0,0,0,.3); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#120F1F; --card:#1C1830; --ink:#F2EFFB; --ink-2:#CFC9E6; --muted:#A49DC2; --hair:#2E2847; --tint:#241F3B;
+  --p-soft:#2C2452; --p-ink:#A792FF;
+  --q:#F5B544; --q-soft:#3A2C10; --j:#79A3FF; --j-soft:#1D2A4F; --d:#FF7489; --d-soft:#42182A; --n:#9C96B8;
+  --good:#4FD39B; --good-soft:#12352A; --bad:#FF7A7E; --bad-soft:#42191C;
+  --shadow:0 1px 2px rgba(0,0,0,.3); color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f);font-size:15px;line-height:1.5;font-variant-numeric:tabular-nums}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--bg)}
+.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));max-width:1080px;margin:0 auto}
+h1,h2,h3{margin:0;text-wrap:balance;letter-spacing:-.02em}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--p2);outline-offset:3px;border-radius:8px}
+a{color:var(--p-ink)}
+.muted{color:var(--muted)}
+main{padding-block:12px 120px}
+
+/* top */
+.top{display:flex;align-items:center;gap:14px;padding-block:16px 10px}
+.top .hello h1{font-size:24px;font-weight:800}
+.top .hello p{margin:0;color:var(--muted);font-size:13.5px}
+.back{width:40px;height:40px;border-radius:14px;border:0;background:var(--card);box-shadow:var(--shadow);display:grid;place-items:center;flex:none}
+.top .search{margin-left:auto;width:min(360px,52%)}
+@media (max-width:640px){.top{flex-wrap:wrap}.top .search{width:100%;order:3}}
+
+/* search */
+.search{position:relative}
+.search input{width:100%;font:inherit;font-size:14.5px;padding:12px 14px 12px 42px;border-radius:16px;border:1px solid var(--hair);background:var(--card);color:var(--ink);box-shadow:var(--shadow)}
+.search .ico{position:absolute;left:15px;top:50%;transform:translateY(-50%);width:17px;height:17px;color:var(--muted);pointer-events:none}
+.sugg{position:absolute;left:0;right:0;top:calc(100% + 8px);background:var(--card);color:var(--ink);border:1px solid var(--hair);border-radius:18px;box-shadow:0 18px 40px rgba(27,21,48,.16);list-style:none;margin:0;padding:6px;z-index:40;max-height:380px;overflow:auto}
+.sugg li{display:grid;grid-template-columns:38px 1fr auto;gap:12px;align-items:center;padding:8px;border-radius:14px;cursor:pointer}
+.sugg li[aria-selected="true"],.sugg li:hover{background:var(--tint)}
+.sugg .tk{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;color:#fff;font-weight:700;font-size:13px}
+.sugg .nm{font-weight:600;font-size:14px;line-height:1.25}
+.sugg .nm small{display:block;font-weight:500;color:var(--muted);font-size:12px}
+.st{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.st.ready{background:var(--good-soft);color:var(--good)} .st.peer{background:var(--p-soft);color:var(--p-ink)} .st.none{background:var(--tint);color:var(--muted)}
+
+/* hero card */
+.hero{background:linear-gradient(140deg,var(--p1),var(--p2));color:var(--on-p);border-radius:26px;padding:22px;position:relative;overflow:hidden;box-shadow:0 14px 30px rgba(90,63,214,.28)}
+.hero::after{content:"";position:absolute;width:210px;height:210px;border-radius:50%;right:-60px;top:-70px;background:rgba(255,255,255,.12)}
+.hero::before{content:"";position:absolute;width:120px;height:120px;border-radius:50%;right:40px;top:60px;background:rgba(255,255,255,.07)}
+.hero>*{position:relative;z-index:1}
+.hero .lbl{font-size:13.5px;opacity:.85;font-weight:500}
+.hero .big{font-size:clamp(36px,8vw,52px);font-weight:800;letter-spacing:-.03em;line-height:1.1;margin:6px 0 16px}
+.hero .row{display:flex;gap:28px;flex-wrap:wrap}
+.hero .row div span{display:block;font-size:12px;opacity:.8}
+.hero .row div b{font-size:19px;font-weight:700}
+.pill{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.18);border-radius:999px;padding:6px 12px 6px 8px;font-weight:700;font-size:13.5px}
+.pill i{width:10px;height:10px;border-radius:50%;background:#fff;display:inline-block}
+.hero .tk{font-size:13px;opacity:.8;font-weight:600}
+
+/* cards */
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:16px}
+@media (max-width:820px){.grid{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--card);border-radius:var(--r);padding:18px;box-shadow:var(--shadow);min-width:0}
+.card.full{grid-column:1/-1}
+.card h2{font-size:17px;font-weight:700;display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.card h2 .dot{width:22px;height:22px;border-radius:8px;background:var(--p-soft);display:grid;place-items:center}
+.card h2 .dot::after{content:"";width:8px;height:8px;border-radius:3px;background:var(--p2)}
+.card p{margin:0}
+.lead{color:var(--ink-2);font-size:14.5px}
+
+/* donut legend */
+.donut{display:grid;grid-template-columns:150px minmax(0,1fr);gap:18px;align-items:center}
+@media (max-width:420px){.donut{grid-template-columns:120px minmax(0,1fr);gap:12px}}
+.leg{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px}
+.leg li{display:grid;grid-template-columns:12px minmax(0,1fr) auto;gap:10px;align-items:center;font-size:13.5px}
+.leg .sq{width:12px;height:12px;border-radius:4px}
+.leg b{font-weight:700;font-size:13.5px;white-space:nowrap}
+.leg li.off{color:var(--muted)}
+.leg li.off b{font-weight:600}
+
+/* list rows */
+.rows{display:flex;flex-direction:column}
+.rowi{display:grid;grid-template-columns:42px minmax(0,1fr) auto;gap:12px;align-items:center;padding:11px 0;border-top:1px solid var(--hair)}
+.rowi:first-child{border-top:0}
+.tile{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;color:#fff;font-weight:800;font-size:15px}
+.rowi .t{font-weight:700;font-size:14.5px;line-height:1.3}
+.rowi .s{font-size:12.5px;color:var(--muted);line-height:1.35}
+.rowi .v{font-weight:800;font-size:15px;text-align:right;white-space:nowrap}
+.rowi .v small{display:block;font-weight:600;font-size:12px}
+.up{color:var(--good)} .dn{color:var(--bad)} .eq{color:var(--muted)}
+.chip{font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;display:inline-block}
+.chip.up{background:var(--good-soft)} .chip.dn{background:var(--bad-soft)} .chip.eq{background:var(--tint)}
+.conn{padding-left:54px;font-size:12px;color:var(--p-ink);font-weight:700;margin:-4px 0 -4px}
+
+/* home */
+.cases .rowi{cursor:pointer;border-radius:14px}
+.cases .rowi:hover{background:var(--tint)}
+.cases .rowi .tile{background:none;width:46px;height:46px}
+.hero .search input{border:0;box-shadow:0 6px 16px rgba(20,10,60,.18);font-size:15px;padding:15px 16px 15px 44px}
+.quick{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.quick button{border:0;background:rgba(255,255,255,.18);color:#fff;border-radius:999px;padding:6px 12px;font-weight:600;font-size:13px}
+
+/* scen + levers */
+.seg{display:flex;gap:4px;background:var(--tint);padding:4px;border-radius:14px;width:fit-content;max-width:100%;overflow-x:auto}
+.seg button{border:0;background:transparent;padding:8px 14px;border-radius:11px;font-weight:700;font-size:13.5px;color:var(--muted);white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--card);color:var(--ink);box-shadow:var(--shadow)}
+.levers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 24px}
+@media (max-width:640px){.levers{grid-template-columns:minmax(0,1fr)}}
+.lever label{display:flex;justify-content:space-between;gap:8px;font-size:13.5px;font-weight:600}
+.lever output{color:var(--p-ink);font-weight:800}
+.lever input{width:100%;accent-color:var(--p2)}
+.lever small{font-size:12px;color:var(--muted)}
+.minis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (max-width:560px){.minis{gap:8px}.mini{padding:10px}.mini b{font-size:15.5px}.mini span,.mini small{font-size:11px}}
+.mini{background:var(--tint);border-radius:16px;padding:12px 14px}
+.mini span{font-size:12px;color:var(--muted);font-weight:600}
+.mini b{display:block;font-size:19px;font-weight:800}
+.mini small{font-size:12px;color:var(--muted)}
+.mini.alert{background:var(--bad-soft)} .mini.alert b{color:var(--bad)}
+
+/* analyses */
+.an{display:flex;flex-direction:column;gap:14px}
+.an .head{display:grid;grid-template-columns:42px minmax(0,1fr);gap:12px;align-items:center}
+.an .head .k{font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.an .head h3{font-size:18px;font-weight:800;line-height:1.25}
+.calc{border:0;background:var(--p-soft);color:var(--p-ink);padding:5px 10px;border-radius:999px;font-size:12px;font-weight:700}
+.notes{display:flex;gap:8px;flex-wrap:wrap}
+details.more summary{cursor:pointer;color:var(--p-ink);font-weight:700;font-size:13.5px;list-style:none}
+details.more summary::-webkit-details-marker{display:none}
+details.more summary::after{content:" ▾"} details.more[open] summary::after{content:" ▴"}
+details.more>div{margin-top:12px}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:8px 8px;text-align:right;border-bottom:1px solid var(--hair);white-space:nowrap}
+th:first-child,td:first-child{text-align:left;white-space:normal}
+th{font-size:11.5px;color:var(--muted);font-weight:700}
+tr.hl td{font-weight:700}
+td.na{font-size:11.5px;color:var(--p-ink);font-weight:600}
+.tag{font-size:12px;font-weight:700;color:var(--p-ink)}
+
+/* charts */
+.chart svg{width:100%;height:auto;display:block}
+.chart .ax{stroke:var(--hair);stroke-width:1}
+.chart text{fill:var(--muted);font-family:var(--f);font-size:11px}
+.chart .lbl{fill:var(--ink);font-weight:700}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+
+/* comitê */
+.vote{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.vote button{border:0;background:rgba(255,255,255,.18);color:#fff;border-radius:12px;padding:9px 14px;font-weight:700;font-size:13.5px}
+.vote button b{margin-left:6px}
+.vote button.on{background:#fff;color:var(--p1)}
+.vnote{margin:10px 0 0 !important;font-size:12.5px;opacity:.85;max-width:70ch}
+.card ol,.card ul.l{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px;font-size:14px;color:var(--ink-2)}
+
+/* bottom nav */
+.nav{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:25;background:var(--card);border-radius:22px;box-shadow:0 10px 30px rgba(27,21,48,.16);display:flex;gap:2px;padding:6px;width:min(560px,calc(100% - 24px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px)))}
+.nav button{flex:1;border:0;background:transparent;border-radius:16px;padding:8px 4px 6px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11.5px;font-weight:700;color:var(--muted)}
+.nav button svg{width:20px;height:20px}
+.nav button[aria-current="page"]{color:var(--p-ink);background:var(--p-soft)}
+.nav button:disabled{opacity:.35;cursor:default}
+
+/* modal + misc */
+.scrim{position:fixed;inset:0;background:rgba(18,12,40,.5);display:flex;align-items:flex-end;justify-content:center;z-index:50;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+@media (min-width:700px){.scrim{align-items:center}}
+.modal{background:var(--card);border-radius:24px;max-width:600px;width:100%;padding:22px;display:flex;flex-direction:column;gap:12px;max-height:85vh;overflow:auto}
+.modal h3{font-size:20px;font-weight:800}
+.modal pre{font-family:var(--f);font-size:13.5px;background:var(--tint);padding:14px;border-radius:14px;white-space:pre-wrap;margin:0}
+.btn{border:0;background:var(--p1);color:#fff;padding:11px 18px;border-radius:14px;font-weight:700}
+.btn.ghost{background:var(--card);color:var(--ink);border:1px solid var(--hair)}
+textarea{width:100%;min-height:320px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;background:var(--card);color:var(--ink);border:1px solid var(--hair);border-radius:16px;padding:14px}
+.err{color:var(--bad);font-size:13.5px}
+.src{font-size:12.5px;color:var(--muted)}
+.src a{word-break:break-word}
+.kicker{font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.newco{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.8fr);gap:16px;padding-block:8px}
+@media (max-width:820px){.newco{grid-template-columns:minmax(0,1fr)}}
+.newco>div{background:var(--card);border-radius:var(--r);padding:18px;box-shadow:var(--shadow);min-width:0}
+.newco h1{font-size:24px;font-weight:800;margin:4px 0 8px}
+.rules{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px;color:var(--ink-2);font-size:14px}
+footer{color:var(--muted);font-size:12px;padding-block:8px 0}
+.sub{font-size:13px;font-weight:800;letter-spacing:.02em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px}
+.sowhat{background:var(--p-soft);border-radius:16px;padding:14px 16px;margin-top:14px}
+.sowhat b{font-size:13px;color:var(--p-ink);text-transform:uppercase;letter-spacing:.02em}
+.sowhat p{margin:4px 0 0 !important;font-size:14.5px;line-height:1.45;color:var(--ink)}
+.tl{list-style:none;margin:0;padding:0;border-left:2px solid var(--hair);margin-left:6px}
+.tl li{position:relative;padding:0 0 14px 16px;display:grid;gap:2px}
+.tl li::before{content:"";position:absolute;left:-7px;top:3px;width:12px;height:12px;border-radius:50%;background:var(--p2);box-shadow:0 0 0 3px var(--card,#fff)}
+.tl time{font-size:12px;font-weight:800;color:var(--p-ink)}
+.tl p{margin:0 !important;font-size:13.5px;line-height:1.4;color:var(--ink)}
+.tl small{font-size:11.5px;color:var(--muted)}
+.mk{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:13.5px;line-height:1.4;color:var(--ink-2)}
+.ot{border-radius:16px;padding:2px 14px 14px}
+.ot.up{background:var(--good-soft)} .ot.dn{background:var(--bad-soft)}
+.ot.up .sub{color:var(--good)} .ot.dn .sub{color:var(--bad)}
+.ot .mk{color:var(--ink)}
+.adv{display:flex;flex-wrap:wrap;gap:8px}
+.adv span{background:var(--tint);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;color:var(--ink)}
+.rowi .s{overflow-wrap:anywhere}
+:root{--accent:var(--p2)}
+</style>
+
+<main class="wrap" id="app"></main>
+<nav class="nav" id="nav" aria-label="Navegação"></nav>
+<div id="modal"></div>
+
+<script>
+const DATA = {"WEG": {"rev": [23563.338, 29904.722, 32503.601, 37986.941, 40804.11, 40130.18], "cpv": [-16602.381, -21209.235, -21702.737, -25173.096, -27122.477, -26831.757], "desp": [-2609.211, -3037.737, -3471.347, -4286.728, -4867.313, -4898.389], "ebit": [4158.343, 5051.587, 6462.125, 7690.528, 7998.741, 7838.807], "da": [520.178, 565.557, 628.042, 812.485, 1001.296, 1044.129], "ebitda": [4678.521, 5617.144, 7090.167, 8503.013, 9000.037, 8882.936], "fin": [171.693, 64.055, 128.672, 217.98, 148.936, 167.16], "lair": [4330.036, 5115.642, 6590.797, 7908.508, 8147.677, 8005.967], "ll": [3585.947, 4208.084, 5731.67, 6042.593, 6376.219, 6254.051], "at": [23932.787, 28134.66, 31496.27, 41489.701, 42645.03, 46666.431], "pl": [13604.971, 14834.795, 17342.085, 22204.221, 17417.185, 18861.411], "plt": [14010.672, 15248.355, 17854.776, 23125.217, 18553.364, 20191.394], "nd": [-1428.02, -1523.136, -4246.163, -4400.839, -2689.043, -3734.796], "rec": [4317.393, 5614.423, 6070.556, 7394.411, 7837.018, 8105.685], "est": [6497.048, 7644.361, 7116.286, 9903.951, 9911.053, 10708.113], "forn": [2120.338, 2036.216, 2190.088, 3778.116, 2789.346, 3345.048], "adc": [2267.484, 2854.545, 3238.834, 4040.292, 4693.39, 5393.812], "comp": [null, 1, 1, 0, 1, 1], "fix": [3129.389, 3603.294, 4099.389, 5099.213, 5868.609, 5942.518], "mkt": {"px": 44.05, "sh": 4197317998, "nci": 1329.983, "exp": -3734.796, "kd": 0.113, "wacc": 0.143502134146342, "wd": 0, "t": 0.16269920645497, "m0": 20.5435505571469, "regua": 1.5, "ev": 182487.0448119, "mcap": 184891.8578119}, "waccd": {"bu": 1.25, "de": 0, "bl": 1.25, "keu": null, "keb": 0.143502134146342, "kel": 0.15978375, "spr": 0.008, "kd": 0.113, "kdp": 0.07458, "ke": 0.143502134146342, "we": 1, "wacc": 0.143502134146342, "t": 0.16269920645497}}, "RENT3": {"rev": [10901.3, 17783.4, 28902.6, 37271.6, 41781.6, 46353.4], "revs": [5593.3, 9734.9, 14943.5, 18082, 19598.1, 20321.2], "desp": [-1405.8, -2021.1, -2222.3, -2809.6, -3169, null], "ebitda": [3697.5, 6589.2, 10522.9, 11914.7, 13753.4, 15005.1], "dc": [-255.1, -1439.5, -3844.7, -5609.7, -5413.3, -5648.1], "ebit": [3224, 4529.5, 5898.5, 5805.2, 7811.6, 8784.6], "da": [473.5, 2059.7, 4624.4, 6109.5, 5941.8, 6220.5], "fin": [-320.9, -2110.6, -4024.3, -3938.7, -4613.7, -4665.4], "lair": [2903.1, 2418.9, 1874.2, 1866.5, 3197.9, 4119.2], "ll": [2043.7, 1841.1, 1803.1, 1813.3, 1870.5, 3421.5], "llaj": [2043.7, 1841.1, 1803.1, 1813.3, 3420.5, 4034.7], "at": [25312, 65652, 80947.1, 87243.6, 85566.6, 90820.3], "pl": [7617.1, 20570.6, 25397.8, 26342.7, 25539, 27102.5], "nd": [7420.6, 26361.8, 29099, 32124.1, 31759.8, 32352], "frota": [289796, 591041, 657612, 669362, 658496, 677163], "comp": [null, 0, 0, 1, 1, 1], "fix": [1879.3, 4080.8, 6846.7, 8919.1, 9110.8, 9736.2563], "mserv": [0.5179, 0.5991, 0.6775, 0.6344, 0.6853, null], "msemi": [0.1508, 0.0941, 0.0286, 0.0231, 0.0146, null], "dcar": [null, 3.2685, 6.1582, 8.4549, 8.1534, 8.4574], "plt": [7617.1, 20570.6, 25397.8, 26342.7, 25539, 27102.5], "mkt": {"px": 51.62, "sh": 1124259345, "nci": 0, "exp": 8870, "kd": 0.118, "wacc": 0.116481219590235, "wd": 0.357930479204334, "t": 0.209220880292854, "m0": 6.02370310020593, "regua": 3, "ev": 90386.2673889, "mcap": 58034.2673889}, "waccd": {"bu": 0.69, "de": 0.557463744363349, "bl": 0.943868989183069, "keu": null, "keb": 0.130394873586864, "kel": 0.146834408242444, "spr": 0.013, "kd": 0.118, "kdp": 0.07788, "ke": 0.138, "we": 0.642069520795667, "wacc": 0.116481219590235, "t": 0.209220880292854}}, "HAPV3": {"rev": [null, null, 27366.1, 28952.1, 30863.3, 31556.1], "cst": [null, null, null, -21130.5, -24080.7, -24639.3], "vend": [null, null, null, -2151.1, -2383.1, -2538.8], "adm": [null, null, null, -4256, -3579.7, -3706.8], "ebit": [null, null, 640.3, 1457.8, 1041.9, 848.4], "fin": [null, null, -1388.2, -778.3, -1420.4, -1386], "lair": [null, null, -747.8, 679.5, -378.5, -537.6], "ll": [null, null, -828.4, 270.4, -237.6, -457.6], "llaj": [null, null, 679.4, 1824.1, 1234.2, 774.8], "da": [null, null, 2128.5, 2222, 2067.5, 1870], "ebitdac": [null, null, 2768.8, 3679.8, 3109.4, 2718.4], "ebitda": [null, null, 2813.3, 3782.4, 3369.4, 2767.8], "at": [null, null, 75146.4, 75475.2, 74101.7, 74413.2], "pl": [null, null, 48813.6, 48727.2, 48205.1, 47823.5], "intang": [null, null, 50834.0, 49522.2, 48339.1, 48339.1], "nd": [null, null, 4815.5, 4534.6, 5182.7, 5401], "comp": [null, 0, null, 1, 1, 1], "fix": [null, null, null, 6478, 5647.2, 5576.8], "plt": [null, null, 48813.6, 48727.2, 48205.1, 47823.5], "mkt": {"px": 8.65, "sh": 502630884, "nci": 0, "exp": 5401, "kd": 0.12, "wacc": 0.108681757210687, "wd": 0.554019339981576, "t": 0.34, "m0": 3.52220433073199, "regua": 2.5, "ev": 9748.7571466, "mcap": 4347.7571466}, "waccd": {"bu": 0.71, "de": 1.24224969746152, "bl": 1.29211820823047, "keu": null, "keb": 0.145305461186297, "kel": 0.161565350208149, "spr": 0.015, "kd": 0.12, "kdp": 0.0792, "ke": 0.145305461186297, "we": 0.445980660018424, "wacc": 0.108681757210687, "t": 0.34}}, "glob": {"rf": 0.0512, "erp": 0.0423, "embi": 0.0171, "vol": 1.5, "pib": 0.0375, "pus": 0.025, "selic": 0.105, "tax": 0.34, "glim": 0.0882500000000001}, "comp": [{"name": "WEG", "grp": "Bens de capital", "evebitda": 20.5435505571469, "ml": 0.156264136137267, "giro": 0.956831546372461, "mult": 2.44844560128402, "roe": 0.366087803511302, "evebit": 23.2799512492016, "nde": -0.420446122768418, "mebit": 0.196027826608643}, {"name": "Siemens", "grp": "Bens de capital", "evebitda": 20.0200911755638, "ml": 0.121904858453506, "giro": 0.474807764046161, "mult": 2.67016901227428, "roe": 0.154553049289891, "evebit": 25.0061366329782, "nde": 3.11503435053523, "mebit": 0.115214030463543}, {"name": "ABB", "grp": "Bens de capital", "evebitda": 22.8572368044634, "ml": 0.142504515352197, "giro": 0.740113623705024, "mult": 2.79014110772674, "roe": 0.294274880338161, "evebit": 25.7702726621931, "nde": 0.460128707330722, "mebit": 0.177904876580373}, {"name": "Schneider", "grp": "Bens de capital", "evebitda": 17.5336228142237, "ml": 0.103681012153816, "giro": 0.642390886983233, "mult": 2.58291664944832, "roe": 0.172031902144717, "evebit": 19.8359001593202, "nde": 1.9118648046004, "mebit": 0.17351564056585}, {"name": "Localiza", "grp": "Locação", "evebitda": 6.02370310020593, "ml": 0.044768510540525, "giro": 0.488293329406567, "mult": 3.3504287560202, "roe": 0.073240925643134, "evebit": 10.2891728011406, "nde": 2.15606693724134, "mebit": 0.186962682137592}, {"name": "Movida", "grp": "Locação", "evebitda": 4.87965222638298, "ml": 0.0216984732824428, "giro": 0.420100214745884, "mult": 11.7671832884097, "roe": 0.107264150943396, "evebit": 7.94100040798021, "nde": 3.52155184059439, "mebit": 0.221919302071974}, {"name": "Hapvida", "grp": "Saúde", "evebitda": 3.52220433073199, "ml": -0.00769846387132944, "giro": 0.416499216617163, "mult": 1.53721701645677, "roe": -0.00492893905416651, "evebit": 11.4907557126355, "nde": 1.95136931859238, "mebit": 0.0337585416983925}, {"name": "Rede D'Or", "grp": "Saúde", "evebitda": 9.24754872819791, "ml": 0.0841400782399598, "giro": 0.523008193413359, "mult": 5.50583918974783, "roe": 0.242289685820587, "evebit": 11.0769621840881, "nde": 1.71, "mebit": 0.179593008649463}]};
+const G = DATA.glob;
+const SELIC_HOJE = 0.1375; // Copom 16/09/2026
+const YB = ['2021','2022','2023','2024','2025','LTM'];
+/* ---------- formatting ---------- */
+const nf = (v,d=0)=> (v==null||!isFinite(v)) ? '–' : v.toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const mi = v => v==null||!isFinite(v)?'–':(Math.abs(v)>=1000? 'R$ '+nf(v/1000,1)+' bi' : 'R$ '+nf(v,0)+' mi');
+const pct = (v,d=1)=> v==null||!isFinite(v)?'–':nf(v*100,d)+'%';
+const spct = (v,d=1)=> v==null||!isFinite(v)?'–':(v>0?'+':'')+nf(v*100,d)+'%';
+const xx = (v,d=1)=> v==null||!isFinite(v)?'–':nf(v,d)+'x';
+const pp = (v,d=1)=> v==null||!isFinite(v)?'–':(v>0?'+':'')+nf(v,d)+' p.p.';
+const brl = v => v==null||!isFinite(v)?'–':'R$ '+nf(v,2);
+const isN = v => typeof v==='number' && isFinite(v);
+const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- companies ---------- */
+const median = a => {const s=[...a].sort((x,y)=>x-y);const m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2;};
+const comp = n => DATA.comp.find(c=>c.name===n);
+function base(code){
+  const d=DATA[code];
+  return {years:YB,s:d,m:d.mkt,w:d.waccd};
+}
+const COS = [];
+(function(){
+  const w=base('WEG'), r=base('RENT3'), h=base('HAPV3');
+  COS.push(Object.assign(w,{code:'WEG',name:'WEG',ticker:'WEGE3',sector:'Bens de capital',kind:'industrial',
+    peer:median(['Siemens','ABB','Schneider'].map(n=>comp(n).evebitda)),peerName:'Siemens, ABB e Schneider (mediana)',peers:['Siemens','ABB','Schneider'],
+    expNote:'caixa líquido: Selic maior aumenta a receita financeira', varName:'custo variável (CPV)',
+    question:'Ela vale o múltiplo que o mercado paga?'}));
+  COS.push(Object.assign(r,{code:'RENT3',name:'Localiza',ticker:'RENT3',sector:'Locação de veículos',kind:'rental',
+    peer:comp('Movida').evebitda,peerName:'Movida',peers:['Movida'],peerEvebit:comp('Movida').evebit,
+    expNote:'só a parcela no CDI sem swap (R$ 8,9 bi) no 1º ano', varName:'custo variável (depreciação e custos diretos)',
+    question:'A dívida está trabalhando a favor ou contra o acionista?'}));
+  COS.push(Object.assign(h,{code:'HAPV3',name:'Hapvida',ticker:'HAPV3',sector:'Saúde',kind:'health',
+    peer:comp("Rede D'Or").evebitda,peerName:"Rede D'Or",peers:["Rede D'Or"],peerEvebit:comp("Rede D'Or").evebit,
+    expNote:'premissa: toda a dívida líquida no CDI', varName:'sinistralidade (custo médico ÷ receita)',
+    question:'O desconto no múltiplo é oportunidade ou reflete problemas reais?'}));
+  COS.forEach(c=>c.builtin=true);
+})();
+
+/* scenarios (same as the spreadsheet) */
+const SCEN = {
+  WEG:{Otimista:[0.10,-0.005,0.05,-0.0175,0,0],Estresse:[-0.10,0.01,0.03,0.02,0,-0.15],
+       why:{Otimista:'Receita +10% (consenso), mix melhor (−0,5 p.p. no custo variável), fixos +5%, Selic −1,75 p.p. (Focus 2027).',Estresse:'Receita −10% (tarifas nos EUA + real forte), custo variável +1 p.p., fixos +3%, Selic +2 p.p., múltiplo −15%.'}},
+  RENT3:{Otimista:[0.08,-0.01,0.03,-0.0175,0,0.10],Estresse:[-0.05,0.02,0.03,0.02,0,-0.15],
+       why:{Otimista:'Receita +8%, depreciação normaliza (−1 p.p.), fixos +3%, Selic −1,75 p.p., múltiplo +10%.',Estresse:'Receita −5%, carro usado mais barato eleva a depreciação (+2 p.p.), fixos +3%, Selic +2 p.p., múltiplo −15%.'}},
+  HAPV3:{Otimista:[0.05,-0.02,-0.03,-0.0175,0,0.30],Estresse:[-0.03,0.02,0.02,0.02,0,-0.10],
+       why:{Otimista:'Recuperação: receita +5%, sinistralidade −2 p.p., fixos −3%, Selic −1,75 p.p., múltiplo +30%.',Estresse:'Receita −3% (perda de beneficiários), sinistralidade +2 p.p., fixos +2%, Selic +2 p.p., múltiplo −10%.'}}
+};
+
+/* ---------- engine ---------- */
+const L = 5; // LTM index
+function at(a,i){return a&&isN(a[i])?a[i]:null;}
+function wacc(c){
+  if(c.w && c.builtin) return c.w;
+  const m=c.m, nd=at(c.s.nd,L), E=m.px*m.sh/1e6, D=Math.max(0,nd);
+  const de=D/E, bl=m.bu*(1+(1-G.tax)*de), keu=G.rf+bl*G.erp+G.embi*G.vol;
+  const keb=(1+keu)*(1+G.pib)/(1+G.pus)-1, kd=G.selic+m.spread, kdp=kd*(1-G.tax), ke=Math.max(keb,kd+0.02), we=E/(E+D);
+  return {bu:m.bu,de,bl,keu,keb,kd,kdp,ke,we,wacc:we*ke+(1-we)*kdp,t:m.t,spr:m.spread};
+}
+function hist(c){
+  const s=c.s, n=c.years.length, out=[];
+  for(let i=0;i<n;i++){
+    const o={};
+    const rev=at(s.rev,i), ebit=at(s.ebit,i), ll=at(s.ll,i), lair=at(s.lair,i), fix=at(s.fix,i), eb=at(s.ebitda,i), nd=at(s.nd,i), fin=at(s.fin,i);
+    if(i>0){
+      const r0=at(s.rev,i-1), e0=at(s.ebit,i-1), l0=at(s.ll,i-1);
+      o.drev = (rev!=null&&r0)? rev/r0-1:null;
+      o.debit= (ebit!=null&&e0)? ebit/e0-1:null;
+      o.dll  = (ll!=null&&l0!=null)? (l0<=0?'n/i':ll/l0-1):null;
+      const cf = s.comp? s.comp[i]:1;
+      if(cf===0){o.gao='série quebrada';o.gaf='série quebrada';}
+      else{
+        if(o.drev==null||o.debit==null) o.gao=null;
+        else if(Math.abs(o.drev)<0.02) o.gao='instável';
+        else if(o.drev*o.debit<0) o.gao='compressão de margem';
+        else o.gao=o.debit/o.drev;
+        if(ll==null||l0==null||o.debit==null) o.gaf=null;
+        else if(ll<=0||l0<=0) o.gaf='n/i (lucro ≤ 0)';
+        else if(Math.abs(o.debit)<0.02) o.gaf='instável';
+        else o.gaf=o.dll/o.debit;
+      }
+      o.gat = isN(o.gao)&&isN(o.gaf)? o.gao*o.gaf : (o.gao==null&&o.gaf==null?null:'n/i');
+    }
+    o.gaoe = (ebit!=null&&fix!=null)? (ebit>0?(ebit+fix)/ebit:'n/i (EBIT ≤ 0)'):null;
+    o.gafe = (ebit!=null&&lair!=null)? (lair>0?ebit/lair:'n/i (LAIR ≤ 0)'):null;
+    o.gate = isN(o.gaoe)&&isN(o.gafe)? o.gaoe*o.gafe : (o.gaoe==null?null:'n/i');
+    o.nde = (nd!=null&&eb)? (eb>0?nd/eb:'n/i'):null;
+    o.cob = (ebit!=null&&fin!=null)? (fin>=0?'caixa líquido':ebit/-fin):null;
+    const atv=at(s.at,i), pl=at(s.pl,i);
+    if(rev&&ll!=null&&atv&&pl){o.ml=ll/rev;o.giro=rev/atv;o.mult=pl>0?atv/pl:null;o.roe=o.mult?o.ml*o.giro*o.mult:null;}
+    if(ll!=null&&lair) o.ctrib= lair>0? ll/lair:null;
+    if(lair!=null&&ebit) o.cjur= ebit>0? lair/ebit:null;
+    if(ebit!=null&&rev) o.mebit=ebit/rev;
+    if(eb!=null&&rev) o.mebitda=eb/rev;
+    if(s.llaj&&at(s.llaj,i)!=null&&pl) o.roeaj=at(s.llaj,i)/pl;
+    out.push(o);
+  }
+  return out;
+}
+function value(c){
+  const s=c.s,m=c.m,w=wacc(c);
+  const ebit=at(s.ebit,L), eb=at(s.ebitda,L), nd=at(s.nd,L), plt=at(s.plt,L);
+  const mcap=m.px*m.sh/1e6, ev=mcap+nd+(m.nci||0);
+  const t=w.t, nopat=ebit*(1-t), cap=plt+nd, roic=cap>0?nopat/cap:null;
+  const o={mcap,ev,evebitda:eb>0?ev/eb:null,evebit:ebit>0?ev/ebit:null,peer:c.peer,wacc:w.wacc,t,nopat,cap,roic};
+  o.prem = isN(o.evebitda)? o.evebitda/c.peer-1:null;
+  o.spread = isN(roic)? (roic-w.wacc)*100:null;
+  o.eva = isN(roic)? (roic-w.wacc)*cap:null;
+  o.mva = ev-cap;
+  o.gimp = (isN(roic)&&roic>w.wacc+0.02)? (ev*w.wacc-nopat)/(ev-nopat/roic) : null;
+  o.kds = isN(roic)? (roic-w.kdp)*100:null;
+  if(s.intang&&at(s.intang,L)!=null){ o.capx=cap-at(s.intang,L); o.roicx=o.capx>0?nopat/o.capx:null; o.spreadx=isN(o.roicx)?(o.roicx-w.wacc)*100:null; o.pltang=at(s.pl,L)-at(s.intang,L);}
+  return o;
+}
+function archetype(c){
+  const H=hist(c), V=value(c), s=c.s, reg=c.m.regua;
+  const rel = isN(V.evebitda)? V.evebitda/c.peer : null;
+  const s1 = at(s.ll,L)<0?1:0;
+  const mg5=H[4]&&H[4].mebitda, mgL=H[L].mebitda;
+  const dmg = isN(mg5)&&isN(mgL)? (mgL-mg5)*100 : null;
+  const s2 = isN(dmg)&&dmg<-2?1:0;
+  const s3 = isN(V.pltang)&&V.pltang<=0?1:0;
+  const sig=s1+s2+s3, nde=H[L].nde, gafe=H[L].gafe;
+  const T=[];
+  const add=(k,ok,val,note)=>T.push({k,ok,val,note});
+  let label, cls, sub='';
+  const eb=at(s.ebitda,L), pl=at(s.pl,L);
+  if(!(eb>0)||!(pl>0)){label='Exceção';cls='neutral';sub='EBITDA ou PL ≤ 0: múltiplos e ROE não se aplicam';}
+  else if(rel<=0.6 && sig>=1){label='Desconto sob suspeita';cls='trap';sub=sig+' de 3 sinais de armadilha';}
+  else if(isN(V.spread)&&V.spread>=5&&isN(nde)&&nde<=1&&(rel>=1.2||(isN(V.gimp)&&V.gimp>=G.glim))){label='Qualidade a preço exigente';cls='champ';sub='qualidade alta, preço exigente';}
+  else if(isN(V.spread)&&V.spread>=5&&isN(nde)&&nde<=1){label='Qualidade a preço justo';cls='champ';sub='qualidade sem exagero no preço';}
+  else if((isN(nde)&&nde>reg)||(isN(gafe)&&gafe>=2)){label='Retorno dependente de juros';cls='lev';sub= V.kds>0?'dívida a favor do acionista':'dívida contra o acionista';}
+  else if(isN(dmg)&&dmg>2&&rel<=0.8){label='Recuperação em curso';cls='champ';sub='melhora ainda não precificada';}
+  else if(isN(V.spread)&&V.spread<-3){label='Destruição de valor';cls='trap';sub='retorno abaixo do custo de capital';}
+  else {label='Sem tese definida';cls='neutral';sub='sem tese clara pelos números';}
+  add('Múltiplo ÷ pares', rel!=null&&(rel<=0.6||rel>=1.2), xx(rel,2), rel<=0.6?'desconto forte':rel>=1.2?'prêmio forte':'em linha');
+  add('ROIC − WACC', isN(V.spread)&&V.spread>=5, pp(V.spread), isN(V.spread)&&V.spread>=5?'cria muito valor':isN(V.spread)&&V.spread<-3?'destrói valor':'perto do custo de capital');
+  add('Dívida líq. ÷ EBITDA', isN(nde)&&nde>reg, isN(nde)?xx(nde,2):'–', 'régua do setor: '+xx(reg,1));
+  add('GAF estrutural', isN(gafe)&&gafe>=2, isN(gafe)?xx(gafe,2):'n/i', isN(gafe)?(gafe>=2?'juros amplificam o lucro':'juros pesam pouco'):'juros maiores que o EBIT');
+  add('Crescimento implícito', isN(V.gimp)&&V.gimp>=G.glim, isN(V.gimp)?pct(V.gimp):'n/a', 'limiar: '+pct(G.glim));
+  add('Sinais de armadilha', sig>=1, sig+'/3', [s1?'prejuízo':null,s2?'margem caindo':null,s3?'PL tangível ≤ 0':null].filter(Boolean).join(', ')||'nenhum');
+  return {label,cls,sub,tests:T,rel,sig,dmg,H,V};
+}
+function simBase(c){
+  const s=c.s,m=c.m,w=wacc(c);
+  const R0=at(s.rev,L),EBIT0=at(s.ebit,L),F0=at(s.fix,L),DA0=at(s.da,L),EBITDA0=at(s.ebitda,L);
+  const P={R0,EBIT0,F0,DA0,EBITDA0,v0:(R0-EBIT0-F0)/R0,ADJ0:EBITDA0-EBIT0-DA0,FIN0:at(s.fin,L),LAIR0:at(s.lair,L),LL0:at(s.ll,L),
+    AT0:at(s.at,L),PL0:at(s.pl,L),CAP0:at(s.plt,L)+at(s.nd,L),ND0:at(s.nd,L),NCI:m.nci||0,EXP:m.exp,KD:w.kd,WACC0:w.wacc,WD:1-w.we,T:w.t,SH:m.sh,PX0:m.px};
+  P.k=P.LL0/P.LAIR0; P.M0=(m.px*m.sh/1e6+P.ND0+P.NCI)/EBITDA0;
+  return P;
+}
+function sim(c,lv){
+  const P=simBase(c); const [dR,dv,dF,dS,dND,dM]=lv;
+  const R1=P.R0*(1+dR), EBIT1=R1*(1-(P.v0+dv))-P.F0*(1+dF), EBITDA1=EBIT1+P.DA0+P.ADJ0;
+  const FIN1=P.FIN0-dS*P.EXP-dND*P.KD, LAIR1=EBIT1+FIN1, LL1=LAIR1*P.k;
+  const ND1=P.ND0+dND, M1=P.M0*(1+dM), EV1=M1*EBITDA1, EQ1=EV1-ND1-P.NCI, PX1=EQ1<=0?0:EQ1/P.SH*1e6;
+  const ROE=LL1/P.PL0, CAP1=P.CAP0+dND, ROIC=CAP1>0?EBIT1*(1-P.T)/CAP1:null, WACC1=P.WACC0+dS*P.WD*(1-G.tax);
+  const gR=dR, gE=P.EBIT0>0?EBIT1/P.EBIT0-1:null, gL=P.LL0>0?LL1/P.LL0-1:null;
+  const GAO=Math.abs(gR)>1e-4&&isN(gE)?gE/gR:null, GAF=isN(gL)&&isN(gE)&&Math.abs(gE)>1e-4?gL/gE:null;
+  return {P,R1,EBIT1,EBITDA1,FIN1,LAIR1,LL1,ND1,M1,EV1,EQ1,PX1,ROE,ROIC,WACC1,gR,gE,gL,GAO,GAF,
+    NDE:EBITDA1>0?ND1/EBITDA1:null,COB:FIN1>=0?null:EBIT1/-FIN1};
+}
+function counter(c,A){
+  const V=A.V, w=wacc(c), s=c.s, P=simBase(c), out=[];
+  if(A.label.startsWith('Qualidade')&&isN(V.roic)){
+    const g=G.glim, evs=V.nopat*(1-g/V.roic)/(w.wacc-g), px=(evs-at(s.nd,L)-(c.m.nci||0))/c.m.sh*1e6;
+    const wj=V.nopat*(1-g/V.roic)/V.ev+g;
+    out.push({t:'Sai de "preço exigente" se a ação cair para',v:brl(px)+' ('+spct(px/c.m.px-1)+')'});
+    out.push({t:'Ou se o custo de capital fosse',v:pct(wj)+' (hoje '+pct(w.wacc)+')'});
+  }
+  if(A.label.startsWith('Retorno dependente')){
+    const red=Math.max(0,-at(s.fin,L)-at(s.ebit,L)/2);
+    out.push({t:'GAF estrutural abaixo de 2,0 com despesa financeira menor em',v:mi(red)+' (≈ '+nf(red/at(s.nd,L)*100,2)+' p.p. de juros)'});
+    const de=Math.max(0,((w.wacc+0.02)*V.cap-V.nopat)/(1-V.t));
+    out.push({t:'Para criar valor (ROIC 2 p.p. acima do WACC), EBIT maior em',v:mi(de)+' ('+spct(de/at(s.ebit,L))+')'});
+  }
+  if(A.label.startsWith('Desconto')||A.label==='Destruição de valor'){
+    const ll=at(s.ll,L);
+    if(ll<0){const ppv=-ll/(1-G.tax)/at(s.rev,L)*100; out.push({t:'Prejuízo zera com '+c.varName+' menor em',v:nf(ppv,1)+' p.p.'});}
+    const r=sim(c,[0,-0.02,0,0,0,0]); out.push({t:'Com −2 p.p. de '+c.varName.split(' (')[0]+', mantido o múltiplo, a ação iria a',v:brl(r.PX1)+' ('+spct(r.PX1/c.m.px-1)+')'});
+  }
+  return out;
+}
+
+
+const MERC={
+ WEG:{
+  title:'O crescimento vem do exterior, e é lá que estão as tarifas',
+  pos:[['Motores de baixa tensão','16%','1º lugar global; ABB tem 15,5% (Omdia 2025)'],['Receita do exterior','62,5%','do total no 3T26, recorde'],['América do Norte','+31,1%','US$ 723 mi no 3T26']],
+  link:'O múltiplo só se sustenta se a América do Norte continuar crescendo, porque o preço embute {g} de crescimento perpétuo. Tarifa, câmbio e cobre pressionam justamente essa receita: a margem EBITDA caiu de 22,2% para 21,6% no 3T26.',
+  comp:[['ABB','Suíça. 2º lugar em motores de baixa tensão (15,5%), forte em automação e eletrificação','22,9x'],['Siemens','Alemanha. Concorre em motores, drives e equipamentos de rede','20,0x'],['Schneider','França. Concorre em automação e distribuição de energia','17,5x']],
+  compNote:'EV/EBITDA dos pares globais da base de dados. A WEG negocia em linha com eles (20,5x), mas com ROIC acima de 30%.',
+  trends:['Eletrificação e reforço das redes elétricas nos EUA, que demandam transformadores','Data centers, que precisam de geradores de backup','Produção perto do cliente: fábricas migram para o México para escapar das tarifas','No Brasil, solar e eólica em baixa e vendas 7,9% menores em 9 meses'],
+  news:[['10/09/2025','WEG passa a ABB e assume a liderança global em motores de baixa tensão, com 16%','Safras'],['17/07/2026','Tarifa adicional de 25% nos EUA. O BTG estima 2% a 3% da receita exposta e mantém compra (alvo R$ 65)','Status Invest'],['29/09/2026','Investimento de US$ 165 mi em geradores na América do Norte: fase 1 no México (2T27) e capacidade de 10 para 50 unidades/dia até 2030','Cenário Energia'],['21/10/2026','3T26: lucro estável, margens menores, dólar médio de R$ 5,45 para R$ 5,14 e capex +34,6%, com 60% no exterior','Exame']],
+  opp:['Transformadores para a rede dos EUA: receita de GTD +13,8% no 3T26 (+24,1% no exterior), com ampliação da fábrica de Betim','Geradores para data centers: capacidade 5 vezes maior até 2030','Baterias e armazenamento (BESS) dentro do capex de R$ 3,6 bi de 2026'],
+  thr:['Tarifas nos EUA, que respondem por 20% a 25% da receita','Real mais forte: dólar médio de R$ 5,45 para R$ 5,14 no 3T26, o que reduz a receita convertida','Cobre e mão de obra mais caros, que pressionaram a margem EBITDA (−0,6 p.p. no 3T26)','Demanda fraca no Brasil, em especial em solar'],
+  adv:['Escala global (nº 1 em motores de baixa tensão)','Verticalização: produz os próprios componentes','Fábricas em vários países, o que permite contornar tarifas','ROIC acima de 30% por anos seguidos'],
+  src:[['Exame, 21/10/2026: WEG 3T26','https://exame.com/invest/mercados/weg-fatura-mais-mas-lucro-fica-estavel-no-3o-tri-com-pressao-do-dolar-e-de-tarifas/'],['Cenário Energia, 29/09/2026: investimento de US$ 165 mi','https://cenarioenergia.com.br/2026/09/29/weg-investe-us-165-milhoes-para-ampliar-producao-de-geradores-na-america-do-norte/'],['Status Invest, 17/07/2026: tarifas dos EUA','https://statusinvest.com.br/noticias/weg-wege3-tarifas-eua-impacto/'],['Safras, 10/09/2025: liderança global','https://safras.com.br/weg-assume-lideranca-global-de-motores-eletricos-de-baixa-tensao/'],['Suno: WEG 3T26','https://www.suno.com.br/noticias/weg-wege3-resultado-3t26-lucro-abaixo-consenso-go/'],['Release 4T25 (RI WEG)','https://api.mziq.com/mzfilemanager/v2/d/50c1bd3e-8ac6-42d9-884f-b9d69f690602/e93d71d4-7174-addd-7179-527d63dc51ce?origin=2']]},
+ RENT3:{
+  title:'A tese depende de juros e de carro usado, e o carro chinês é o risco novo',
+  pos:[['Alavancagem','2,2x','a menor do setor; pares de 2,8x a 4,5x (BofA, 1T26)'],['Frota','677 mil','carros em jun/26'],['Idade média da frota','20 meses','meta da empresa: 15 meses']],
+  link:'Hoje o ROIC ({roic}) empata com o WACC ({wacc}). Para abrir esse spread, duas variáveis precisam ajudar: a Selic (27% da dívida segue o CDI) e a depreciação. Pelo JPMorgan, cada 1 p.p. a mais de depreciação reduz em 9% o lucro estimado para 2027.',
+  comp:[['Movida','Única grande locadora acelerando: aluguel de carros +18% no 1T26, com alavancagem maior','4,9x'],['Unidas','Aluguel de carros +1% e diárias de frota −10% no 1T26, priorizando carros de maior valor','–'],['Montadoras chinesas','Não alugam carros, mas derrubam o preço do novo e, com ele, o do seminovo que a Localiza revende','–']],
+  compNote:'EV/EBITDA da base de dados. A Localiza (6,0x) negocia com prêmio sobre a Movida.',
+  trends:['Ciclo de queda da Selic: 13,75% hoje, 12,0% em 2027 e 10,5% em 2028 (Focus)','Carros chineses com cerca de 13% das vendas de novos em 2026 (BYD com mais de 6%)','Seminovos de até 3 anos 9,3% mais baratos no 1º semestre, contra −2,4% da Fipe','Depreciação acima de 9% ao ano, contra 4% (aluguel) e 8% (frotas) antes da pandemia'],
+  news:[['23/04/2026','BTG vê uma segunda onda de carros chineses, mais gradual. No estresse, R$ 333 mi a mais de depreciação. Mantém compra (alvo R$ 65)','Exame'],['14/05/2026','BofA 1T26: Movida cresce 18% em aluguel; Localiza tem a menor alavancagem do setor','EuQueroInvestir'],['10/09/2026','Seminovos de até 3 anos caem 9,3% no semestre; Corolla 2025 −21,2%, T-Cross −20,9%','Itatiaia / Auto Avaliar'],['30/09/2026','JPMorgan corta o lucro de 2027: depreciação acima de 9%. Revenda/compra de 87% em 2025 e 90,5% esperado para 2027','InfoMoney']],
+  opp:['Queda da Selic reduz o custo da parte da dívida que segue o CDI','Carro de reposição mais barato pode ampliar o mercado de locação (BTG)','Renovar a frota (de 20 para 15 meses) melhora o preço de revenda'],
+  thr:['Preço de seminovo em queda, que força mais depreciação e baixa contábil','Carros chineses pressionando o valor residual','IPI e política tributária: o IPI Verde custou R$ 929 mi em 2025','Movida ganhando volume (+18% em aluguel no 1T26)'],
+  adv:['Escala de compra junto às montadoras','Rede própria de revenda de seminovos','Custo de dívida menor que o dos concorrentes','Menor alavancagem do setor'],
+  src:[['InfoMoney, 30/09/2026: JPMorgan sobre a Localiza','https://www.infomoney.com.br/mercados/localiza-rent3-depreciacao-e-carros-chineses-sao-riscos-mas-valuation-esta-atrativo/'],['Exame, 26/04/2026: BTG e carros chineses','https://exame.com/invest/mercados/btg-ve-segunda-onda-de-carros-chineses-mas-mantem-compra-para-localiza/'],['EuQueroInvestir, 14/05/2026: BofA 1T26','https://euqueroinvestir.com/acoes/movida-ganha-mercado-com-crescimento-de-18-no-aluguel-de-carros'],['Itatiaia, 10/09/2026: preço de seminovos','https://www.itatiaia.com.br/auto/guerra-de-precos-dos-carros-novos-derruba-valor-de-seminovos-em-ate-21/'],['Focus 19/10/2026','https://www.infomoney.com.br/economia/boletim-focus-projecoes-19102026/'],['Release 2T26 (RI Localiza)','https://api.mziq.com/mzfilemanager/v2/d/08f327aa-e610-4d9d-b683-8ff0f7caae07/ffd204e4-d65f-5649-63a7-f12a8b70f4bd?origin=2'],['Release 4T25 (RI Localiza)','https://api.mziq.com/mzfilemanager/v2/d/08f327aa-e610-4d9d-b683-8ff0f7caae07/bd8e39a1-b1b1-a804-aade-5c23f304a888?origin=2']]},
+ HAPV3:{
+  title:'Perde clientes num mercado que cresce, e corrigir preço tem risco político',
+  pos:[['Participação em vidas','16,1%','8,5 mi de beneficiários em mai/26'],['Participação em receita','7,8%','−0,4 p.p. no 1T26 (ANS)'],['Vidas em revisão de preço','947 mil','cerca de 11% da carteira']],
+  link:'O múltiplo de {ev} já precifica a perda de clientes. A revisão de preço pode devolver margem, mas pode custar vidas e gerar mais ações judiciais. Por isso o gatilho da tese é a sinistralidade, não o preço da ação.',
+  comp:[['SulAmérica (Rede D’Or)','Ganha espaço: 9,8% da receita do setor (+0,3 p.p.). O par de comparação é também concorrente direto','9,2x'],['Amil','+42 mil vidas em maio e +270 mil em 12 meses; 8,4% da receita do setor','–'],['Bradesco Saúde','+33 mil vidas em maio; base 10,2% maior em 12 meses','–'],['Sistema Unimed','Maior grupo do setor: 31,6% da receita (−0,2 p.p.)','–']],
+  compNote:'EV/EBITDA da base de dados. Hapvida negocia a 3,5x.',
+  trends:['Setor crescendo: 53,1 mi de beneficiários, +1,5% em 12 meses','Seguradoras ganham espaço (25,9% da receita, +0,2 p.p.) e a medicina de grupo perde (30,1%, −0,7 p.p.)','Judicialização em alta: o custo de processos entra direto na sinistralidade','Eleições de 2026 aumentam o risco de reação a reajustes fortes'],
+  news:[['1T26','Dados da ANS: SulAmérica e Amil ganham participação e Hapvida perde 0,4 p.p.','InfoMoney'],['14/07/2026','Hapvida perde 91 mil vidas de janeiro a maio, enquanto o setor ganha 136 mil só em maio','Economic News Brasil'],['13/08/2026','2T26: sinistralidade caixa de 75,2% (+3 p.p.), provisões cíveis de R$ 324 mi (+97%), EBITDA ajustado −28%. Ação −33,1%','InfoMoney'],['24/08/2026','Após a ANS liberar reajustes em planos deficitários (21/08), a Hapvida revisa 947 mil vidas em 12 meses: reajuste ou encerramento','CQCS']],
+  opp:['Revisão de preço: ganho estimado de 0,9 p.p. na margem estrutural (Bradesco BBI)','Rede própria volta a dar vantagem de custo se a utilização normalizar','Mercado ainda crescendo, com espaço para recuperar vidas'],
+  thr:['Judicialização: depósitos judiciais de R$ 2,1 bi e provisões de R$ 1,9 bi','Reação política e regulatória aos reajustes em ano de eleição','Perda de clientes para Amil, Bradesco e SulAmérica','Queima de caixa: −R$ 855 mi após juros no 2T26 (Morgan Stanley)'],
+  adv:['Rede própria verticalizada (hospitais e clínicas)','Uma das maiores bases de vidas do país'],
+  src:[['InfoMoney, 13/08/2026: Hapvida 2T26','https://www.infomoney.com.br/mercados/hapvida-hapv3-acoes-desabam-balanco-2t26-marcado-por-margens-pressionadas-e-judicializacao/'],['CQCS, 25/08/2026: revisão de 947 mil vidas','https://cqcs.com.br/noticia/hapvida-revisara-planos-de-947-mil-clientes-entenda-o-que-pode-mudar/'],['Economic News Brasil, 14/07/2026: beneficiários','https://economicnewsbrasil.com.br/2026/07/14/hapvida-perde-beneficiarios-mercado-saude/'],['InfoMoney: dados da ANS no 1T26','https://www.infomoney.com.br/mercados/dados-da-ans-no-1t26-sulamerica-e-amil-crescem-e-hapvida-perde-espaco/'],['Relatório 2T26 (RI Hapvida)','https://api.mziq.com/mzfilemanager/v2/d/6bbd1770-f9f4-44e8-a1b1-d26b7585eec1/2da3a782-e91a-675b-c1ad-9b08af4c71b0?origin=2']]}
+};
+
+const CASH={
+ WEG:{kind:'std',fco:[1056.1,2982.9,7021.8,7252.3,6451.0,6935.4],capex:[847.3,1174.4,1658.6,1850.3,2691.3,2887.8],juros:null,
+  note:'Fluxo de caixa livre = caixa das operações − (imobilizado + intangível). Últimos 12 meses = 2025 + 1S26 − 1S25. A WEG tem caixa líquido, então não há juros relevantes a descontar.',
+  src:[['Release 4T25 (DFC 2025 e 2024)','https://api.mziq.com/mzfilemanager/v2/d/50c1bd3e-8ac6-42d9-884f-b9d69f690602/e93d71d4-7174-addd-7179-527d63dc51ce?origin=2'],['Release 4T24 (DFC 2023)','https://api.mziq.com/mzfilemanager/v2/d/50c1bd3e-8ac6-42d9-884f-b9d69f690602/9b9f9cb8-4e9e-aee5-c8cf-3b04b1a9a211?origin=1'],['Release 4T22 (DFC 2022 e 2021)','https://api.mziq.com/mzfilemanager/v2/d/50c1bd3e-8ac6-42d9-884f-b9d69f690602/08adf685-7295-ed31-8651-a521764e8883?origin=1'],['Release 2T26 (DFC 1S26 e 1S25)','https://api.mziq.com/mzfilemanager/v2/d/50c1bd3e-8ac6-42d9-884f-b9d69f690602/9a78cad5-4da1-b36f-38ec-45060792f84c?origin=2']]},
+ RENT3:{kind:'rental',book:[4075.5,6654.2,12829.7,17718.4,20711.0,null],gross:[7647.2,22400.3,25949.6,26297.3,26318.6,null],rep:[null,null,null,3276,6277,null],
+  note:'Numa locadora, comprar carro é o próprio negócio. Por isso usamos uma aproximação: EBITDA + valor contábil dos carros vendidos − investimento bruto em frota. Ela não desconta IR, capital de giro nem outros investimentos. Em 2025 a empresa reportou R$ 6.277 mi antes de juros, e em 2024 cerca de R$ 3.276 mi (deduzido do texto do release). Os últimos 12 meses ficam em branco porque o release do 2T26 não abre o investimento bruto do semestre de 2025.',
+  src:[['Release 4T25 (frota, venda de carros e fluxo de caixa)','https://api.mziq.com/mzfilemanager/v2/d/08f327aa-e610-4d9d-b683-8ff0f7caae07/bd8e39a1-b1b1-a804-aade-5c23f304a888?origin=2'],['Release 2T26','https://api.mziq.com/mzfilemanager/v2/d/08f327aa-e610-4d9d-b683-8ff0f7caae07/ffd204e4-d65f-5649-63a7-f12a8b70f4bd?origin=2']]},
+ HAPV3:{kind:'std',fco:[null,null,null,2726.2,2088.6,1508.5],capex:[null,null,null,806.3,1040.4,1007.6],juros:[null,null,null,1369.5,1738.8,1823.9],
+  note:'Fluxo de caixa livre = caixa das operações − (imobilizado + intangível). Os juros pagos ficam nas atividades de financiamento e aparecem à parte. Últimos 12 meses = 2025 + 1S26 − 1S25. Pela definição gerencial da empresa, o 1S26 gerou R$ 448,6 mi antes de juros.',
+  src:[['Relatório 4T25 (DFC 2025 e 2024)','https://api.mziq.com/mzfilemanager/v2/d/6bbd1770-f9f4-44e8-a1b1-d26b7585eec1/153ca94c-a1d3-668e-032e-4cf4d2427a11?origin=2'],['Relatório 2T26 (DFC 1S26 e 1S25)','https://api.mziq.com/mzfilemanager/v2/d/6bbd1770-f9f4-44e8-a1b1-d26b7585eec1/2da3a782-e91a-675b-c1ad-9b08af4c71b0?origin=2']]}
+};
+function costLines(c){
+  const s=c.s,r=i=>s.rev[i],dv=(a,i)=>a&&a[i]!=null&&r(i)?Math.abs(a[i])/r(i):null;
+  if(c.code==='WEG') return [{n:'Custo dos produtos vendidos',a:s.cpv},{n:'Despesas operacionais',a:s.desp}].map(o=>({...o,p:c.years.map((_,i)=>dv(o.a,i))}));
+  if(c.code==='RENT3'){const ce=s.rev.map((v,i)=>v!=null&&s.ebitda[i]!=null?-(v-s.ebitda[i]):null);
+    return [{n:'Custos e despesas (exceto depreciação)',a:ce,p:c.years.map((_,i)=>dv(ce,i))},{n:'Depreciação de carros',a:s.dc,p:c.years.map((_,i)=>dv(s.dc,i))},{n:'Despesas de vendas e administrativas',a:s.desp,p:c.years.map((_,i)=>dv(s.desp,i))}];}
+  if(c.code==='HAPV3') return [{n:'Custo dos serviços (assistencial)',a:s.cst},{n:'Despesas de vendas',a:s.vend},{n:'Despesas administrativas',a:s.adm}].map(o=>({...o,p:c.years.map((_,i)=>dv(o.a,i))}));
+  return [];
+}
+function cagr(a){let i0=a.findIndex(v=>v!=null);const i1=4;if(i0<0||i0>=i1||a[i1]==null)return {v:null};const n=i1-i0,x=a[i0],y=a[i1];if(x<=0||y<=0)return {v:'n/i',i0,n};return {v:Math.pow(y/x,1/n)-1,i0,n,x,y};}
+function fcfSeries(c){
+  const k=CASH[c.code];if(!k)return null;const s=c.s;
+  if(k.kind==='rental'){const f=c.years.map((_,i)=>k.gross[i]==null?null:s.ebitda[i]+k.book[i]-k.gross[i]);return {f,after:f.map((v,i)=>v==null?null:v+s.fin[i]),afterLbl:'após resultado financeiro (DRE)'};}
+  const f=c.years.map((_,i)=>k.fco[i]==null?null:k.fco[i]-k.capex[i]);
+  return {f,after:k.juros?f.map((v,i)=>v==null?null:v-k.juros[i]):null,afterLbl:'após juros pagos'};
+}
+function custosExtra(c,H,V){
+  const s=c.s,k=CASH[c.code],CL=costLines(c),F=fcfSeries(c),cols=['var(--i2)','var(--i5)','var(--i4)'];
+  if(!CL.length||!F) return {body:'',more:'',calc:''};
+  const g=[['Receita',cagr(s.rev)],['EBITDA',cagr(s.ebitda)],['Lucro líquido',cagr(c.code==='RENT3'?s.llaj:s.ll)]];
+  const gtxt=o=>o.v==null?'–':o.v==='n/i'?'n/i':pct(o.v);
+  const per=g[0][1].i0!=null?`${c.years[g[0][1].i0]}–2025`:'';
+  const last=[5,4].find(i=>isN(F.f[i])),lastA=F.after?[5,4].find(i=>isN(F.after[i])):null;
+  const base=isN(lastA)?F.after[lastA]:F.f[last],yl=isN(lastA)?lastA:last,fy=base/V.mcap,conv=F.f[last]/s.ebitda[last];
+  const fl=CL[0],d0=fl.p.findIndex(v=>v!=null),dd=fl.p[4]-fl.p[d0];
+  const sowhat=({WEG:()=>`A receita cresceu ${gtxt(g[0][1])} ao ano, mas os custos acompanharam: o custo dos produtos vendidos foi de ${pct(fl.p[d0])} para ${pct(fl.p[4])} da receita. O caixa livre rende ${pct(fy)} sobre o valor de mercado, menos de um quinto da Selic. Quem compra a ação paga hoje por um crescimento que ainda não virou caixa.`,
+   RENT3:()=>`A frota foi comprada com dívida entre 2022 e 2023, quando o caixa depois do investimento ficou negativo. Em 2024 o caixa voltou a ficar positivo antes de juros, com menos compra líquida de carros. Em 2025, mesmo depois do resultado financeiro, sobraram ${pct(fy)} do valor de mercado (antes de IR). É isso que sustenta a tese de juros caindo.`,
+   HAPV3:()=>`O custo assistencial passou de ${pct(fl.p[d0])} para ${pct(fl.p[5]??fl.p[4])} da receita. Antes de juros a empresa ainda gera caixa, mas, depois dos juros pagos, o caixa livre dos últimos 12 meses ficou negativo em ${mi(-F.after[5])}. A dívida consome a geração operacional, por isso a revisão de preço é urgente.`})[c.code]?.()||'';
+  const ci=Math.max(0,CL[0].p.findIndex(v=>v!=null)),yrs=c.years.slice(ci);
+  const body=`<div class="grid" style="margin-top:0">
+    <div><h4 class="sub">Custos e despesas (% da receita)</h4>${lineChart(yrs,CL.map((o,i)=>({name:o.n,values:o.p.slice(ci),color:cols[i]})),v=>pct(v,0),'Custos e despesas sobre a receita')}</div>
+    <div><h4 class="sub">Crescimento anual composto${per?' ('+per+')':''}</h4><div class="minis">${g.map(([l,o])=>mini(l,gtxt(o),o.n?(o.n===1?'1 ano':o.n+' anos'):'',isN(o.v)&&o.v<0)).join('')}</div>${{HAPV3:'<p class="src" style="margin-top:8px">Série curta: a base da Hapvida começa em 2023 (primeiro ano cheio e reapresentado depois da fusão com a NotreDame Intermédica). Com lucro negativo, a taxa composta não se calcula (n/i). Custos por linha só a partir de 2024: a empresa reclassificou custo e despesas em 2025.</p>',RENT3:'<p class="src" style="margin-top:8px">O crescimento inclui a fusão com a Unidas (2022), não é só orgânico. Lucro líquido ajustado.</p>',WEG:'<p class="src" style="margin-top:8px">Crescimento orgânico e por aquisições (motores e geradores da Regal Rexnord em 2024).</p>'}[c.code]||''}</div>
+   </div>
+   <div class="grid" style="margin-top:0">
+    <div><h4 class="sub">Fluxo de caixa livre (R$ mi)</h4>${barChart(c.years.map((y,i)=>({label:y,value:F.f[i],hl:i===last})).filter(o=>isN(o.value)),v=>nf(v,0),'Fluxo de caixa livre')}</div>
+    <div><h4 class="sub">O que sobra para o acionista</h4><div class="minis" style="grid-template-columns:1fr 1fr">${mini('Rendimento do caixa livre',pct(fy),(isN(lastA)?F.afterLbl:'antes de juros')+', '+c.years[yl],fy<0.05)}${mini('Conversão do EBITDA em caixa',pct(conv,0),'caixa livre ÷ EBITDA, '+c.years[last])}</div>${F.after?`<p class="src" style="margin-top:8px">Fluxo ${F.afterLbl}: ${c.years.map((y,i)=>isN(F.after[i])?y+' '+nf(F.after[i],0):null).filter(Boolean).join(' · ')}</p>`:''}</div>
+   </div>
+   <div class="sowhat"><b>E daí</b><p>${esc(sowhat)}</p></div>
+   <p class="src" style="margin-top:10px">${esc(k.note)} Fontes: ${k.src.map(([t,u])=>`<a href="${u}" target="_blank" rel="noopener">${esc(t)}</a>`).join(' · ')}</p>`;
+  const th=`<thead><tr><th></th>${c.years.map(y=>`<th>${y}</th>`).join('')}</tr></thead>`,R=(l,a,f,hl)=>`<tr${hl?' class="hl"':''}><td>${l}</td>${c.years.map((_,i)=>cell(a[i],f)).join('')}</tr>`;
+  const more=`<div class="tw"><table>${th}<tbody>${R('Receita (R$ mi)',s.rev,v=>nf(v,0),1)}${CL.map(o=>R(esc(o.n)+' (R$ mi)',o.a.map(v=>v==null?null:Math.abs(v)),v=>nf(v,0))+R('&nbsp;&nbsp;% da receita',o.p,v=>pct(v))).join('')}${R('EBITDA (R$ mi)',s.ebitda,v=>nf(v,0),1)}${k.kind==='std'?R('Caixa das operações',k.fco,v=>nf(v,0))+R('Investimento (imob. + intang.)',k.capex.map(v=>v==null?null:-v),v=>nf(v,0)):R('Valor contábil dos carros vendidos',k.book,v=>nf(v,0))+R('Investimento bruto em frota',k.gross.map(v=>v==null?null:-v),v=>nf(v,0))}${R('Fluxo de caixa livre',F.f,v=>nf(v,0),1)}${F.after?R(F.afterLbl.charAt(0).toUpperCase()+F.afterLbl.slice(1),F.after,v=>nf(v,0)):''}${k.rep?R('Reportado pela empresa',k.rep,v=>nf(v,0)):''}</tbody></table></div>`;
+  const cg=g[0][1];
+  const cl=calc('Crescimento anual composto','CAGR = (valor final ÷ valor inicial)^(1 ÷ anos) − 1',isN(cg.v)?`Receita = (${nf(cg.y)} ÷ ${nf(cg.x)})^(1 ÷ ${cg.n}) − 1 = ${pct(cg.v,2)}`:'n/i')+
+    calc('Fluxo de caixa livre',k.kind==='rental'?'FCL ≈ EBITDA + valor contábil dos carros vendidos − investimento bruto em frota':'FCL = caixa das operações − investimento em imobilizado e intangível',k.kind==='rental'?`${c.years[last]}: ${nf(s.ebitda[last])} + ${nf(k.book[last])} − ${nf(k.gross[last])} = ${nf(F.f[last])}`:`${c.years[last]}: ${nf(k.fco[last])} − ${nf(k.capex[last])} = ${nf(F.f[last])}`)+
+    calc('Rendimento do caixa livre','Rendimento = caixa livre ÷ valor de mercado',`= ${nf(base)} ÷ ${nf(V.mcap)} = ${pct(fy,2)}`);
+  return {body,more,calc:cl};
+}
+
+function riskFlags(c,A){
+  const V=A.V,H=A.H,F=[],s=c.s;
+  if(isN(V.gimp)&&V.gimp>G.glim) F.push(`O preço embute crescimento perpétuo de ${pct(V.gimp)} ao ano em reais, contra limiar de ${pct(G.glim)}.`);
+  if(c.peers.length>1&&isN(A.rel)&&A.rel<1.2&&A.label==='Qualidade a preço exigente') F.push(`Contra os pares globais o múltiplo está em linha (${xx(A.rel,2)} da mediana): se o comitê usar pares globais como referência, o preço deixa de parecer exigente.`);
+  if(isN(H[4].mult)&&isN(H[3].mult)&&H[4].mult-H[3].mult>0.3) F.push(`O ROE do último ano subiu pelo multiplicador (${xx(H[3].mult,2)} → ${xx(H[4].mult,2)}), ou seja, por mudança no balanço, não por operação.`);
+  if(isN(V.spread)&&Math.abs(V.spread)<2) F.push(`ROIC praticamente igual ao WACC (${pp(V.spread)}): a empresa não cria valor econômico hoje.`);
+  if(isN(H[L].cob)&&H[L].cob<2) F.push(`Cobertura de juros de ${xx(H[L].cob,2)}: ${H[L].cob<1?'o EBIT não paga os juros':'pouca folga se o EBIT cair'}.`);
+  const st=SCEN[c.code]&&sim(c,SCEN[c.code].Estresse); if(st) F.push(`No cenário de estresse, o preço implícito vai a ${brl(st.PX1)} (${spct(st.PX1/c.m.px-1)}).`);
+  if(isN(V.evebit)&&c.peerEvebit&&V.evebit>=c.peerEvebit*0.9&&A.rel<0.8) F.push(`O desconto some no EV/EBIT (${xx(V.evebit,1)} contra ${xx(c.peerEvebit,1)}): o "barato" vem da D&A elevada.`);
+  if(isN(V.pltang)&&V.pltang<=0) F.push(`PL tangível negativo: o patrimônio é quase todo ágio, e o P/VP baixo não indica pechincha.`);
+  if(isN(V.prem)&&V.prem>0.15&&c.kind==='rental') F.push(`Prêmio de ${pct(V.prem,0)} sobre a Movida exige que a vantagem de custo de dívida e de escala se mantenha.`);
+  return F.slice(0,4);
+}
+function reco(c,A){const r=reco0(c,A);return [r[0],r[1].replace(/\.\./g,'.')];}
+function reco0(c,A){
+  const V=A.V,cf=counter(c,A);
+  if(A.label==='Qualidade a preço exigente') return ['Leitura neutra',`Qualidade excepcional, mas o preço exige crescimento acima do limiar. ${cf[0]?cf[0].t+' '+cf[0].v+'.':''}`];
+  if(A.label==='Qualidade a preço justo') return ['Leitura favorável','Qualidade com preço em linha.'];
+  if(A.label.startsWith('Retorno dependente')) return [V.kds>0?'Leitura favorável, condicionada a juros':'Leitura desfavorável',`A dívida rende mais do que custa, mas o ROIC mal cobre o WACC. A tese depende da queda da Selic e da normalização da depreciação.`];
+  if(A.label.startsWith('Desconto')) return ['Leitura desfavorável até o gatilho',`${A.sig} de 3 sinais de armadilha. Reavaliar se a sinistralidade cair: ${cf[0]?cf[0].t.toLowerCase()+' '+cf[0].v:''}. A assimetria existe: ${cf[1]?cf[1].v:''} no cenário de −2 p.p.`];
+  if(A.label==='Recuperação em curso') return ['Leitura favorável, com risco elevado','Melhora de margem ainda não precificada.'];
+  if(A.label==='Destruição de valor') return ['Leitura desfavorável','Retorno abaixo do custo de capital.'];
+  return ['Sem leitura definida','Os números não apontam direção clara.'];
+}
+
+const TEMPLATE={
+ "_comentario":"EXEMPLO FICTÍCIO para testar. Valores em R$ milhões; listas na ordem dos anos.",
+ "nome":"Exemplo Varejo S.A.","ticker":"EXMP3","setor":"Varejo","regua_divida_ebitda":2.0,
+ "beta_setor":0.95,"spread_credito":0.018,"aliquota":0.34,
+ "ev_ebitda_pares":6.5,"nome_pares":"Pares do varejo","ev_ebit_pares":9.0,
+ "preco":12.40,"acoes_mi":800,"minoritarios":0,"divida_exposta_selic":null,
+ "anos":["2023","2024","2025","LTM"],
+ "receita":[9200,10100,10900,11250],"ebit":[780,840,860,830],"da":[310,340,365,375],
+ "resultado_financeiro":[-260,-310,-380,-410],"lucro_liquido":[340,350,320,285],
+ "despesas_operacionais":[2100,2300,2480,2560],"ativo_total":[11800,12700,13600,13900],
+ "pl":[4300,4500,4650,4700],"divida_liquida":[2300,2600,3000,3150]
+};
+
+function thesisLine(c,A){
+  const V=A.V;
+  if(A.label==='Qualidade a preço exigente') return `Retorno muito acima do custo de capital (ROIC ${pct(V.roic)} contra WACC ${pct(V.wacc)}), sem dívida. O preço, porém, embute crescimento perpétuo de ${pct(V.gimp)} ao ano, acima do limiar de ${pct(G.glim)}. O risco é de múltiplo, não de operação.`;
+  if(A.label==='Qualidade a preço justo') return `Retorno muito acima do custo de capital e balanço leve, com múltiplo em linha com os pares.`;
+  if(A.label.startsWith('Retorno dependente')) return `Os juros consomem ${pct(1-(A.H[L].cjur||0),0)} do EBIT e amplificam qualquer choque (GAT estrutural ${xx(A.H[L].gate,1)}). A dívida rende mais do que custa (ROIC − Kd ${pp(V.kds)}), mas o retorno total mal cobre o custo de capital (${pp(V.spread)}).`;
+  if(A.label.startsWith('Desconto')) return `Desconto de ${pct(-V.prem,0)} no EV/EBITDA contra ${c.peerName}, mas ${A.sig} de 3 sinais de armadilha. No EV/EBIT o desconto some (${xx(V.evebit,1)} contra ${xx(c.peerEvebit,1)}).`;
+  return `Sem tese clara pelos números.`;
+}
+
+/* ---------- directory for search ---------- */
+const DIR = [
+ ['WEGE3','WEG','Bens de capital','ready'],['RENT3','Localiza','Locação de veículos','ready'],['HAPV3','Hapvida','Saúde','ready'],
+ ['MOVI3','Movida','Locação de veículos','peer'],['RDOR3',"Rede D'Or",'Saúde','peer'],
+ ['AURE3','Auren Energia','Energia elétrica','none'],['EGIE3','Engie Brasil','Energia elétrica','none'],['AXIA3','Axia Energia','Energia elétrica','none'],
+ ['PETR4','Petrobras','Petróleo e gás','none'],['VALE3','Vale','Mineração','none'],['ITUB4','Itaú Unibanco','Bancos','none'],['BBDC4','Bradesco','Bancos','none'],
+ ['BBAS3','Banco do Brasil','Bancos','none'],['ABEV3','Ambev','Bebidas','none'],['SUZB3','Suzano','Papel e celulose','none'],['EMBR3','Embraer','Aeroespacial','none'],
+ ['RADL3','Raia Drogasil','Varejo farmacêutico','none'],['LREN3','Lojas Renner','Varejo','none'],['MGLU3','Magazine Luiza','Varejo','none'],['PRIO3','PRIO','Petróleo e gás','none'],
+ ['GGBR4','Gerdau','Siderurgia','none'],['RAIL3','Rumo','Logística','none'],['EQTL3','Equatorial','Energia elétrica','none'],['SBSP3','Sabesp','Saneamento','none'],
+ ['VIVT3','Telefônica Brasil','Telecomunicações','none'],['TOTS3','Totvs','Software','none'],['B3SA3','B3','Serviços financeiros','none'],['FLRY3','Fleury','Saúde','none'],
+ ['CMIG4','Cemig','Energia elétrica','none'],['KLBN11','Klabin','Papel e celulose','none']
+].map(([ticker,name,sector,st])=>({ticker,name,sector,st}));
+const norm=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+const STL={ready:'análise completa',peer:'comparável',none:'sem base'};
+const PEEROF={MOVI3:'RENT3',RDOR3:'HAPV3'};
+
+
+const ACOL={champ:'var(--q)',lev:'var(--j)',trap:'var(--d)',neutral:'var(--n)'};
+const TILE=['var(--i1)','var(--i2)','var(--i3)','var(--i4)','var(--i5)','var(--i6)'];
+const tileColor=s=>TILE[[...s].reduce((a,c)=>a+c.charCodeAt(0),0)%TILE.length];
+function iris(A,size=150,center=true){
+  const c=size/2,R=size*0.48,r0=size*0.31,n=A.tests.length,gap=0.035;
+  let g='';
+  A.tests.forEach((t,i)=>{
+    const a0=-Math.PI/2+i*2*Math.PI/n+gap,a1=-Math.PI/2+(i+1)*2*Math.PI/n-gap,p=(r,a)=>[c+r*Math.cos(a),c+r*Math.sin(a)];
+    const[x1,y1]=p(R,a0),[x2,y2]=p(R,a1),[x3,y3]=p(r0,a1),[x4,y4]=p(r0,a0);
+    g+=`<path d="M${x1} ${y1} A${R} ${R} 0 0 1 ${x2} ${y2} L${x3} ${y3} A${r0} ${r0} 0 0 0 ${x4} ${y4} Z" fill="${t.ok?ACOL[A.cls]:'var(--tint)'}"><title>${esc(t.k)}: ${esc(t.val)}</title></path>`;});
+  const on=A.tests.filter(t=>t.ok).length;
+  if(center) g+=`<text x="${c}" y="${c-size*0.03}" text-anchor="middle" style="font-size:${size*0.075}px;font-weight:600" fill="var(--muted)">testes</text><text x="${c}" y="${c+size*0.1}" text-anchor="middle" style="font-size:${size*0.15}px;font-weight:800" fill="var(--ink)">${on}/${n}</text>`;
+  return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" style="max-width:100%;height:auto;display:block" role="img" aria-label="${on} de ${n} testes disparados">${g}</svg>`;
+}
+/* ---------- calc ---------- */
+let CALCS=[];
+function calc(title,formula,subst,note){CALCS.push({title,formula,subst,note});return `<button class="calc" data-calc="${CALCS.length-1}">ver cálculo</button>`;}
+function openModal(html){
+  const m=document.getElementById('modal');
+  m.innerHTML=`<div class="scrim" role="dialog" aria-modal="true"><div class="modal">${html}<div><button class="btn" id="mclose">Fechar</button></div></div></div>`;
+  const close=()=>{m.innerHTML='';};
+  m.querySelector('#mclose').onclick=close; m.querySelector('#mclose').focus();
+  m.querySelector('.scrim').onclick=e=>{if(e.target.classList.contains('scrim'))close();};
+}
+
+
+/* ---------- charts ---------- */
+function lineChart(years,series,fmt,label){
+  const W=560,H=210,pl=50,pr=14,pt=14,pb=28;
+  const vals=series.flatMap(s=>s.values.filter(isN)); if(!vals.length) return '';
+  let lo=Math.min(0,...vals), hi=Math.max(...vals); const pad=(hi-lo)*0.1||1; hi+=pad; if(lo<0) lo-=pad;
+  const idx=years.map((y,i)=>i), X=i=>pl+(W-pl-pr)*(years.length===1?0.5:i/(years.length-1)), Yp=v=>pt+(H-pt-pb)*(1-(v-lo)/(hi-lo));
+  let g='';
+  for(let k=0;k<=3;k++){const v=lo+(hi-lo)*k/3,y=Yp(v);g+=`<line class="ax" x1="${pl}" x2="${W-pr}" y1="${y}" y2="${y}" ${k?'stroke-dasharray="2 5"':''}/><text x="${pl-8}" y="${y+3}" text-anchor="end">${fmt(v)}</text>`;}
+  years.forEach((y,i)=>g+=`<text x="${X(i)}" y="${H-8}" text-anchor="middle">${y}</text>`);
+  series.forEach(s=>{
+    let d='',open=false,area='',first=null,last=null;
+    s.values.forEach((v,i)=>{if(isN(v)){d+=(open?'L':'M')+X(i)+' '+Yp(v)+' ';if(first==null)first=i;last=i;open=true;}else open=false;});
+    if(s.area&&first!=null) g+=`<path d="${d} L${X(last)} ${Yp(Math.max(lo,0))} L${X(first)} ${Yp(Math.max(lo,0))} Z" fill="${s.color}" opacity=".10"/>`;
+    g+=`<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2.4" stroke-linejoin="round"/>`;
+    s.values.forEach((v,i)=>{if(isN(v)) g+=`<circle cx="${X(i)}" cy="${Yp(v)}" r="${i===last?4.5:2.5}" fill="${s.color}"/>`;});
+    if(last!=null) g+=`<text class="lbl" x="${Math.min(X(last),W-pr)}" y="${Yp(s.values[last])-10}" text-anchor="end" style="font-weight:500">${fmt(s.values[last])}</text>`;
+  });
+  return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label)}">${g}</svg>${series.length>1?`<div class="legend">${series.map(s=>`<span><i style="background:${s.color}"></i>${esc(s.name)}</span>`).join('')}</div>`:''}</div>`;
+}
+function barChart(items,fmt,label){
+  const W=560,rowh=34,pl=104,pr=64,H=items.length*rowh+8;
+  const vals=items.map(i=>i.value).filter(isN); const lo=Math.min(0,...vals), hi=Math.max(...vals,0);
+  const X=v=>pl+(W-pl-pr)*((v-lo)/((hi-lo)||1));
+  let g=`<line class="ax" x1="${X(0)}" x2="${X(0)}" y1="0" y2="${H-4}"/>`;
+  items.forEach((it,i)=>{const y=i*rowh+4, x0=X(Math.min(0,it.value)), x1=X(Math.max(0,it.value));
+    g+=`<text class="lbl" x="${pl-10}" y="${y+18}" text-anchor="end" style="font-family:var(--f-body);font-size:12.5px;${it.hl?'font-weight:600':''}">${esc(it.label)}</text>`;
+    g+=`<rect x="${x0}" y="${y+6}" width="${Math.max(2,x1-x0)}" height="${rowh-16}" rx="9" fill="${it.hl?'var(--accent)':'var(--hair)'}"/>`;
+    g+=`<text x="${x1+8}" y="${y+18}" class="lbl" style="${it.hl?'font-weight:500':''}">${fmt(it.value)}</text>`;});
+  return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label)}">${g}</svg></div>`;
+}
+
+
+let view='home', cur=0, screen='painel', levers=[0,0,0,0,0,0], scenName='Base', pending=null;
+function store(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function load(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
+/* ---------- search component ---------- */
+const ICO='<svg class="ico" viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="6" fill="none" stroke="currentColor" stroke-width="2"/><line x1="13" y1="13" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+function searchHTML(id,ph){return `${ICO}<input id="${id}" type="search" role="combobox" aria-expanded="false" aria-controls="${id}-list" aria-autocomplete="list" autocomplete="off" placeholder="${ph}"><ul class="sugg" id="${id}-list" role="listbox" hidden></ul>`;}
+function allEntries(){
+  const extra=COS.filter(c=>!c.builtin).map(c=>({ticker:c.ticker,name:c.name,sector:c.sector,st:'ready'}));
+  return [...DIR.filter(d=>!extra.find(e=>e.ticker===d.ticker)),...extra];
+}
+function bindSearch(id){
+  const inp=document.getElementById(id), list=document.getElementById(id+'-list'); let items=[], sel=0;
+  const draw=()=>{
+    const q=norm(inp.value.trim());
+    const all=allEntries();
+    items=(q?all.filter(e=>norm(e.name).includes(q)||norm(e.ticker).startsWith(q)||norm(e.sector).split(/\s+/).some(w=>w.startsWith(q))):all.filter(e=>e.st!=='none')).sort((a,b)=>({ready:0,peer:1,none:2}[a.st]-{ready:0,peer:1,none:2}[b.st])).slice(0,8);
+    if(q&&!items.length){list.innerHTML=`<li aria-disabled="true"><span class="tk" style="background:var(--muted)">?</span><span class="nm">Nenhuma empresa encontrada. Carregue os dados em "Nova empresa".</span><span></span></li>`;list.hidden=false;inp.setAttribute('aria-expanded','true');return;}
+    sel=Math.min(sel,items.length-1);
+    list.innerHTML=items.map((e,i)=>`<li role="option" id="${id}-o${i}" aria-selected="${i===sel}" data-tk="${e.ticker}"><span class="tk" style="background:${tileColor(e.ticker)}">${esc(e.name.charAt(0))}</span><span class="nm">${esc(e.name)}<small>${e.ticker} · ${esc(e.sector)}</small></span><span class="st ${e.st}">${STL[e.st]}</span></li>`).join('');
+    list.hidden=false; inp.setAttribute('aria-expanded','true');
+  };
+  const close=()=>{list.hidden=true;inp.setAttribute('aria-expanded','false');};
+  inp.addEventListener('focus',draw); inp.addEventListener('input',()=>{sel=0;draw();});
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='ArrowDown'){sel=Math.min(sel+1,items.length-1);draw();e.preventDefault();}
+    else if(e.key==='ArrowUp'){sel=Math.max(sel-1,0);draw();e.preventDefault();}
+    else if(e.key==='Enter'){if(items[sel]){open(items[sel].ticker);}e.preventDefault();}
+    else if(e.key==='Escape'){close();}
+  });
+  list.addEventListener('mousedown',e=>{const li=e.target.closest('[data-tk]');if(li){e.preventDefault();open(li.dataset.tk);}});
+  inp.addEventListener('blur',()=>setTimeout(close,120));
+}
+
+function open(tk){
+  const ci=COS.findIndex(c=>c.ticker===tk);
+  if(ci>=0){cur=ci;view='co';screen='painel';levers=[0,0,0,0,0,0];scenName='Base';render();window.scrollTo({top:0});return;}
+  const e=DIR.find(d=>d.ticker===tk);
+  if(e&&e.st==='peer'){pending={peer:e,of:COS[COS.findIndex(c=>c.ticker===PEEROF[tk])]};view='peer';render();return;}
+  pending={peer:e}; view='nova'; render(); window.scrollTo({top:0});
+}
+const ICON={
+ home:'<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>',
+ painel:'<rect x="3" y="3" width="8" height="8" rx="2.5" fill="currentColor"/><rect x="13" y="3" width="8" height="8" rx="2.5" fill="currentColor" opacity=".55"/><rect x="3" y="13" width="8" height="8" rx="2.5" fill="currentColor" opacity=".55"/><rect x="13" y="13" width="8" height="8" rx="2.5" fill="currentColor"/>',
+ cascata:'<path d="M4 6h10M8 12h10M12 18h8" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>',
+ analises:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>',
+ comite:'<circle cx="8" cy="9" r="3.2" fill="currentColor"/><circle cx="16.5" cy="9" r="3.2" fill="currentColor" opacity=".55"/><path d="M2.5 20c.6-3.4 2.8-5 5.5-5s4.9 1.6 5.5 5M11 20c.6-3.4 2.8-5 5.5-5s4.9 1.6 5.5 5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>'
+};
+function renderNav(){
+  const co=view==='co';
+  const items=[['home','Início'],['painel','Painel'],['cascata','Cascata'],['analises','Análises'],['comite','Comitê']];
+  document.getElementById('nav').innerHTML=items.map(([k,l])=>{const curp = k==='home'?view!=='co':(co&&screen===k);
+    return `<button data-nav="${k}" ${curp?'aria-current="page"':''} ${!co&&k!=='home'?'disabled':''}><svg viewBox="0 0 24 24" aria-hidden="true">${ICON[k]}</svg>${l}</button>`;}).join('');
+}
+function topbar(title,sub,back=true){
+  return `<div class="top">${back?`<button class="back" data-nav="home" aria-label="Voltar ao início"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`:''}<div class="hello"><h1>${title}</h1><p>${sub}</p></div><div class="search">${searchHTML('tq','Buscar empresa')}</div></div>`;
+}
+const rowi=(tile,t,s,v,vs,cls='',g)=>`<div class="rowi"><div class="tile" style="background:${tile}">${g??esc(t.charAt(0))}</div><div><div class="t">${t}</div>${s?`<div class="s">${s}</div>`:''}</div><div class="v ${cls}">${v}${vs?`<small>${vs}</small>`:''}</div></div>`;
+const dcls=d=>!isN(d)||Math.abs(d)<0.0005?'eq':(d>0?'up':'dn');
+
+function vHome(){
+  const As=COS.filter(c=>c.builtin).map(c=>[c,archetype(c)]);
+  const extra=COS.filter(c=>!c.builtin);
+  return `<div class="top"><div class="hello"><h1>Olá 👋</h1><p>Que empresa vamos analisar hoje?</p></div></div>
+  <div class="hero"><div class="lbl">Lente · research de empresas da B3</div><div class="big" style="font-size:clamp(26px,5.5vw,38px);margin-bottom:14px">Os números dizem o quê.<br>A Lente diz por quê.</div>
+   <div class="search">${searchHTML('q','Busque por nome ou ticker')}</div>
+   <div class="quick">${As.map(([c])=>`<button data-open="${c.ticker}">${esc(c.name)}</button>`).join('')}<button data-go="nova">+ Outra empresa</button></div></div>
+  <div class="grid">
+   <div class="card"><h2><span class="dot"></span>Análises completas</h2><p class="src" style="margin:-4px 0 6px">${As.length} empresas com análise completa e dados de fonte primária. Movida e Rede D'Or entram como comparáveis; os demais tickers da busca ainda não têm base carregada.</p><div class="rows cases">${[...As,...extra.map(c=>[c,archetype(c)])].map(([c,A])=>`<div class="rowi" data-open="${c.ticker}" role="button" tabindex="0"><div class="tile">${iris(A,46,false)}</div><div><div class="t">${esc(c.name)} <span class="muted" style="font-weight:600;font-size:12.5px">${esc(c.ticker)}</span></div><div class="s" style="color:${ACOL[A.cls]};font-weight:700">${esc(A.label)}</div></div><div class="v">${brl(c.m.px)}<small class="muted">EV/EBITDA ${xx(archetype(c).V.evebitda,1)}</small></div></div>`).join('')}</div></div>
+   <div class="card"><h2><span class="dot"></span>Como a Lente lê uma empresa</h2>
+    <div class="rows">${[['Cinco análises conectadas','Alavancagem, DuPont, custos, valuation e mercado, cada uma com o seu "e daí?"'],['Cascata de um choque','Vendas, custos, Selic, dívida e múltiplo até o preço da ação'],['Arquétipo explicável','Seis testes com o número que disparou cada um'],['Modo Comitê','Fundamentos, riscos da tese e pontos de monitoramento']].map(([t,s],i)=>rowi(TILE[i],t,s,'','','',String(i+1))).join('')}</div></div>
+  </div>
+  <footer>Projeto acadêmico de Finanças Corporativas (ESPM). Dados até 22/10/2026; valores em R$ milhões; LTM = 12 meses até jun/26. Não é recomendação de investimento.</footer>`;
+}
+function vPeer(){
+  const p=pending.peer,o=pending.of;
+  return `${topbar(esc(p.name),esc(p.ticker)+' · comparável')}<div class="card"><p class="lead">A ${esc(p.name)} tem dados padronizados de agregador e entra como comparável na análise da ${esc(o.name)} (DuPont e valuation). Para uma análise completa, carregue a base dela no formato padrão.</p>
+  <div class="notes" style="margin-top:14px"><button class="btn" data-open="${o.ticker}">Ver ${esc(o.name)}</button><button class="btn ghost" data-go="nova">Carregar base completa</button></div></div>`;
+}
+
+/* ---------- company screens ---------- */
+function priceLabel(c){
+  if(c.live) return `Preço da ação · ao vivo${c.live.changePct!=null?` <b>${spct(c.live.changePct/100,2)}</b> no dia`:''}`;
+  return 'Preço da ação · 22/10/2026';
+}
+function priceSource(c){
+  if(c.live){const t=c.live.time?new Date(c.live.time):null;const h=t&&!isNaN(t)?t.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
+    return `Fonte: API brapi.dev${h?' · cotação de '+h:''} (atraso de ~30 min). Todos os múltiplos e cenários usam este preço.`;}
+  if(c.builtin&&LIVE.status==='fail') return 'Fonte: cotação coletada manualmente em 22/10/2026 (a API de cotações está indisponível agora).';
+  if(c.builtin&&LIVE.status==='loading') return 'Buscando a cotação ao vivo…';
+  return 'Fonte: cotação coletada manualmente em 22/10/2026.';
+}
+function heroCo(c,A,V){
+  return `<div class="hero"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap"><div class="lbl">${priceLabel(c)}</div><span class="pill"><i style="background:${ACOL[A.cls]}"></i>${esc(A.label)}</span></div>
+   <div class="big">${brl(c.m.px)}</div>
+   <div class="row"><div><span>EV/EBITDA</span><b>${xx(V.evebitda,1)}</b></div><div><span>ROIC − WACC</span><b>${pp(V.spread)}</b></div><div><span>Dívida líq./EBITDA</span><b>${xx(A.H[L].nde,1)}</b></div></div>
+   <p class="vnote" style="margin:14px 0 0">${esc(priceSource(c))}</p></div>`;
+}
+function sPainel(c,A,V){
+  const cf=counter(c,A);
+  return `${heroCo(c,A,V)}<div class="grid">
+   <div class="card"><h2><span class="dot"></span>Por que esse arquétipo</h2><div class="donut">${iris(A,150)}<ul class="leg">${A.tests.map(t=>`<li class="${t.ok?'':'off'}"><span class="sq" style="background:${t.ok?ACOL[A.cls]:'var(--tint)'}"></span><span>${esc(t.k)}</span><b>${esc(t.val)}</b></li>`).join('')}</ul></div></div>
+   <div class="card"><h2><span class="dot"></span>A tese em uma frase</h2><p class="lead">${thesisLine(c,A)}</p><p class="src" style="margin-top:12px">Pergunta do caso: <b style="color:var(--ink)">${esc(c.question)}</b></p></div>
+   <div class="card full"><h2><span class="dot"></span>O que mudaria a classificação</h2><div class="rows">${cf.map((f,i)=>rowi(TILE[(i+1)%6],esc(f.t),'',esc(f.v.split(' (')[0]),f.v.includes('(')?esc('('+f.v.split(' (')[1]):'','',String(i+1))).join('')||'<p class="src">Sem gatilhos calculados.</p>'}</div></div>
+  </div>`;
+}
+function sCascata(c,A,V){
+  const r=sim(c,levers),b=sim(c,[0,0,0,0,0,0]),P=r.P,sc=SCEN[c.code],roeD=r.ROE-b.ROE;
+  const st=Math.max(1,Math.round(Math.max(Math.abs(P.ND0),P.EBITDA0)/100));
+  const LV=[['dR','Vendas',-0.2,0.2,0.01,v=>spct(v,0),'Testa o GAO'],['dv',c.varName.charAt(0).toUpperCase()+c.varName.slice(1),-0.05,0.05,0.0025,v=>pp(v*100,2),'Custo que acompanha a receita'],
+    ['dF','Custos fixos',-0.1,0.1,0.01,v=>spct(v,0),'Despesas operacionais + D&A'],['dS','Selic',-0.04,0.04,0.0025,v=>pp(v*100,2),c.expNote],
+    ['dND','Dívida líquida',-st*100,st*100,st,v=>(v>0?'+':'')+mi(v),'Nova dívida paga '+pct(P.KD)+' ao ano'],['dM','Múltiplo EV/EBITDA',-0.4,0.4,0.01,v=>spct(v,0),'Hoje '+xx(P.M0,1)]];
+  const step=(i,t,v,bv,f,d)=>rowi(TILE[i],t,'base '+f(bv),f(v),`<span class="chip ${dcls(d)}">${isN(d)?spct(d):'–'}</span>`);
+  const conn=t=>`<div class="conn">↓ ${t}</div>`;
+  return `<div class="hero"><div class="lbl">Preço implícito no cenário ${esc(scenName.toLowerCase())}</div><div class="big">${brl(r.PX1)}</div><div class="row"><div><span>Contra o preço atual</span><b>${spct(r.PX1/P.PX0-1)}</b></div><div><span>Lucro líquido</span><b>${mi(r.LL1)}</b></div><div><span>ROE</span><b>${pct(r.ROE)}</b></div></div></div>
+  <div class="grid">
+   <div class="card full"><div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:6px"><h2 style="margin:0"><span class="dot"></span>E se…?</h2>
+    <div class="seg" role="group" aria-label="Cenário">${['Base',...(sc?['Otimista','Estresse']:[])].map(n=>`<button data-scen="${n}" aria-pressed="${scenName===n}">${n}</button>`).join('')}${scenName==='Personalizado'?'<button aria-pressed="true">Personalizado</button>':''}</div></div>
+    <p class="src" style="margin-bottom:8px">${sc&&sc.why[scenName]?esc(sc.why[scenName]):'Base: últimos 12 meses até jun/26. Ajuste as premissas abaixo para criar seu cenário.'}</p>
+    <div class="rows">
+     ${step(0,'Receita',r.R1,b.R1,mi,r.gR)}${conn(isN(r.GAO)?'GAO × '+nf(r.GAO,2):'GAO')}
+     ${step(1,'EBIT',r.EBIT1,b.EBIT1,mi,r.gE)}${conn(isN(r.GAF)?'GAF × '+nf(r.GAF,2):'GAF')}
+     ${step(2,'Lucro líquido',r.LL1,b.LL1,mi,r.gL)}${conn('÷ patrimônio (DuPont)')}
+     ${rowi(TILE[3],'ROE','base '+pct(b.ROE),pct(r.ROE),`<span class="chip ${dcls(roeD)}">${pp(roeD*100)}</span>`)}${conn('× EV/EBITDA de '+nf(r.M1,1))}
+     ${step(4,'Preço implícito',r.PX1,b.PX1,brl,r.PX1/P.PX0-1)}
+    </div></div>
+   <div class="card"><h2><span class="dot"></span>Ajuste as premissas</h2><div class="levers">${LV.map(([k,lab,mn,mx,stp,f,hint],i)=>`<div class="lever"><label for="lv-${k}">${esc(lab)}<output>${f(levers[i])}</output></label><input type="range" id="lv-${k}" data-i="${i}" min="${mn}" max="${mx}" step="${stp}" value="${levers[i]}"><small>${esc(hint)}</small></div>`).join('')}</div></div>
+   <div class="card"><h2><span class="dot"></span>Saúde do cenário</h2><div class="minis" style="grid-template-columns:1fr">
+     <div class="mini ${isN(r.NDE)&&r.NDE>c.m.regua?'alert':''}"><span>Dívida líquida ÷ EBITDA</span><b>${xx(r.NDE,2)}</b><small>régua do setor: ${xx(c.m.regua,1)}</small></div>
+     <div class="mini"><span>ROIC − WACC</span><b>${isN(r.ROIC)?pp((r.ROIC-r.WACC1)*100):'–'}</b><small>ROIC ${pct(r.ROIC)} · WACC ${pct(r.WACC1)}</small></div>
+     <div class="mini ${r.EQ1<=0?'alert':''}"><span>Valor para o acionista</span><b>${mi(r.EQ1)}</b><small>${r.EQ1<=0?'a dívida supera o EV':'EV de '+mi(r.EV1)}</small></div></div>
+    <div class="notes" style="margin-top:12px">${calc('EBIT do cenário','EBIT = Receita × (1 − (custo variável + Δ)) − Fixos × (1 + Δ)',`= ${nf(r.R1)} × (1 − (${pct(P.v0,2)} + ${pp(levers[1]*100,2)})) − ${nf(P.F0)} × (1 ${spct(levers[2],0)}) = ${nf(r.EBIT1)}`,'Custos fixos = despesas operacionais + D&A; custo do produto tratado como variável (premissa simplificadora). O simulador mede sensibilidade, não valor justo: o múltiplo só muda quando você o move.')}${calc('Lucro do cenário','LL = (EBIT + resultado financeiro) × k',`= (${nf(r.EBIT1)} + ${nf(r.FIN1)}) × ${nf(P.k,3)} = ${nf(r.LL1)}`,'k = lucro ÷ LAIR dos últimos 12 meses.')}${calc('Preço implícito','Preço = (EV/EBITDA × EBITDA − dívida líquida − minoritários) ÷ ações',`= (${nf(r.M1,2)} × ${nf(r.EBITDA1)} − ${nf(r.ND1)} − ${nf(P.NCI)}) ÷ ${nf(P.SH/1e6,1)} mi = ${brl(r.PX1)}`)}</div></div>
+  </div>`;
+}
+const cell=(v,f)=>v==null?'<td class="na">–</td>':isN(v)?`<td>${f(v)}</td>`:`<td class="na">${esc(v)}</td>`;
+const fv2=v=>isN(v)?xx(v,2):`<span class="tag">${esc(v??'–')}</span>`;
+function anCard(i,kicker,title,figs,chart,more,notes){
+  return `<div class="card full an"><div class="head"><div class="tile" style="background:${TILE[i]}">${i+1}</div><div><div class="k">${kicker}</div><h3>${title}</h3></div></div>
+   ${figs?`<div class="minis">${figs}</div>`:''}${chart||''}${notes?`<div class="notes">${notes}</div>`:''}${more?`<details class="more"><summary>Ver números completos</summary><div>${more}</div></details>`:''}</div>`;
+}
+const mini=(l,v,s,al)=>`<div class="mini ${al?'alert':''}"><span>${l}</span><b>${v}</b>${s?`<small>${s}</small>`:''}</div>`;
+function sAnalises(c,A,V){
+  const H=A.H,s=c.s,w=wacc(c);
+  const trow=(lab,k,f,hl)=>`<tr${hl?' class="hl"':''}><td>${lab}</td>${H.map(o=>cell(o[k],f)).join('')}</tr>`;
+  const thead=`<thead><tr><th></th>${c.years.map(y=>`<th>${y}</th>`).join('')}</tr></thead>`;
+  let out=`${heroCo(c,A,V)}<div class="grid">`;
+  /* 1 */
+  const r10=sim(c,[-0.1,0,0,0,0,0]),gate=H[L].gate,sel=-c.m.exp*0.01*(1-G.tax);
+  const lvl=!isN(gate)?'os juros já superam o lucro operacional':gate<2?'risco de volume, não de estrutura':gate<4?'alavancagem moderada':'choques pequenos se multiplicam';
+  out+=anCard(0,'Alavancagem',`−10% nas vendas, ${isN(r10.gL)?spct(r10.gL,0):'prejuízo maior'} no lucro: ${lvl}`,
+   mini('GAO estrutural',fv2(H[L].gaoe),'(EBIT + fixos) ÷ EBIT')+mini('GAF estrutural',fv2(H[L].gafe),'EBIT ÷ LAIR')+mini('Selic +1 p.p.',(sel>0?'+':'')+mi(sel),'no lucro do 1º ano',sel<0),
+   `<div class="grid" style="margin-top:0"><div>${lineChart(c.years,[{name:'GAO estrutural',values:H.map(o=>isN(o.gaoe)?o.gaoe:null),color:'var(--p2)'},{name:'GAF estrutural',values:H.map(o=>isN(o.gafe)?o.gafe:null),color:'var(--i5)'}],v=>nf(v,1)+'x','GAO e GAF')}</div><div>${lineChart(c.years,[{name:'Dívida líquida ÷ EBITDA',values:H.map(o=>isN(o.nde)?o.nde:null),color:'var(--i1)',area:true}],v=>nf(v,1)+'x','Dívida sobre EBITDA')}<p class="src">Régua do setor: ${xx(c.m.regua,1)}</p></div></div>`,
+   `<div class="tw"><table>${thead}<tbody>${trow('Δ% receita','drev',v=>spct(v))}${trow('Δ% EBIT','debit',v=>spct(v))}${trow('Δ% lucro','dll',v=>spct(v))}${trow('GAO (fórmula da matéria)','gao',v=>xx(v,2),1)}${trow('GAF (fórmula da matéria)','gaf',v=>xx(v,2),1)}${trow('GAT','gat',v=>xx(v,2),1)}${trow('Cobertura de juros','cob',v=>xx(v,2))}</tbody></table></div><p class="src">Quando a fórmula engana, aparece o motivo: série quebrada (fusão), instável (variação abaixo de 2%), compressão de margem ou lucro ≤ 0.</p>`,
+   calc('GAO e GAF estruturais','GAO = (EBIT + custos fixos) ÷ EBIT ; GAF = EBIT ÷ LAIR',`GAO = (${nf(s.ebit[L])} + ${nf(s.fix[L])}) ÷ ${nf(s.ebit[L])} = ${isN(H[L].gaoe)?nf(H[L].gaoe,2):'n/i'}\nGAF = ${nf(s.ebit[L])} ÷ ${nf(s.lair[L])} = ${isN(H[L].gafe)?nf(H[L].gafe,2):'n/i'}`));
+  /* 2 */
+  const peers=[c.name,...c.peers].map(n=>DATA.comp.find(p=>p.name===n)).filter(Boolean);
+  const me=isN(H[4].roe)?H[4]:H[L];const facs=[['ml','margem'],['giro','giro do ativo'],['mult','alavancagem']];
+  let drv='';if(peers.length>1){const ps=peers.slice(1);const res=facs.map(([k,l])=>({l,r:me[k]/median(ps.map(q=>q[k]))}));drv=res.reduce((a,b)=>b.r>a.r?b:a).l;}
+  const jump=isN(H[4].mult)&&isN(H[3].mult)&&H[4].mult-H[3].mult>0.3;
+  out+=anCard(1,'DuPont',c.code==='HAPV3'?'ROE perto de zero, sobre um patrimônio que é quase todo ágio':`ROE de ${pct(me.roe,0)}, puxado ${drv?'por '+drv:'pela operação'}${jump?' (e por um salto no multiplicador)':''}`,
+   mini('Margem líquida',pct(me.ml),'lucro ÷ receita')+mini('Giro do ativo',xx(me.giro,2),'receita ÷ ativo')+mini('Multiplicador',xx(me.mult,2),'ativo ÷ PL',jump),
+   peers.length>1?`<div class="grid" style="margin-top:0"><div><p class="src" style="margin-bottom:4px">ROE</p>${barChart(peers.map(p=>({label:p.name,value:p.roe,hl:p.name===c.name})),v=>pct(v,0),'ROE')}</div><div><p class="src" style="margin-bottom:4px">Ativo ÷ PL</p>${barChart(peers.map(p=>({label:p.name,value:p.mult,hl:p.name===c.name})),v=>xx(v,1),'Multiplicador')}</div></div>`:'',
+   `<div class="tw"><table>${thead}<tbody>${trow('Margem líquida','ml',v=>pct(v))}${trow('Giro do ativo','giro',v=>xx(v,2))}${trow('Multiplicador','mult',v=>xx(v,2))}${trow('ROE','roe',v=>pct(v),1)}${H.some(o=>o.roeaj!=null)?trow('ROE com lucro ajustado','roeaj',v=>pct(v)):''}${trow('Carga tributária','ctrib',v=>xx(v,2))}${trow('Carga de juros','cjur',v=>xx(v,2))}${trow('Margem EBIT','mebit',v=>pct(v))}</tbody></table></div>${jump?`<p class="src">O multiplicador saltou de ${xx(H[3].mult,2)} para ${xx(H[4].mult,2)}: o ROE subiu pelo balanço, não pela operação.</p>`:''}`,
+   calc('ROE','ROE = margem × giro × multiplicador',`= ${pct(me.ml)} × ${nf(me.giro,2)} × ${nf(me.mult,2)} = ${pct(me.roe)}`));
+  /* 3 */
+  const base=simBase(c),r1=sim(c,[0,-0.01,0,0,0,0]),vname=c.varName.split(' (')[0];
+  let ch='';
+  if(c.code==='WEG'){const d=c.years.map((_,i)=>{const rev=s.rev[i],cpv=-s.cpv[i];return {mb:1-cpv/rev,ciclo:s.rec[i]/rev*365+s.est[i]/cpv*365-s.forn[i]/cpv*365-s.adc[i]/rev*365};});
+    ch=`<div class="grid" style="margin-top:0"><div>${lineChart(c.years,[{name:'Bruta',values:d.map(o=>o.mb),color:'var(--p2)'},{name:'EBITDA',values:H.map(o=>o.mebitda),color:'var(--i5)'},{name:'Líquida',values:H.map(o=>o.ml),color:'var(--i3)'}],v=>pct(v,0),'Margens')}</div><div>${lineChart(c.years,[{name:'Ciclo de caixa (dias)',values:d.map(o=>o.ciclo),color:'var(--i1)',area:true}],v=>nf(v,0),'Ciclo de caixa')}<p class="src">10 dias a menos de estoque liberam cerca de ${mi(-s.cpv[L]/365*10)}.</p></div></div>`;}
+  else if(c.code==='RENT3'){ch=`<div class="grid" style="margin-top:0"><div>${lineChart(c.years.slice(0,5),[{name:'EBITDA de serviços',values:s.mserv.slice(0,5),color:'var(--p2)'},{name:'EBITDA de seminovos',values:s.msemi.slice(0,5),color:'var(--i2)'}],v=>pct(v,0),'Margens')}</div><div>${lineChart(c.years.slice(1),[{name:'Depreciação por carro (R$ mil)',values:s.dcar.slice(1),color:'var(--i5)',area:true}],v=>nf(v,1),'Depreciação por carro')}<p class="src">−R$ 1 mil por carro = +${mi(s.frota[L]/1000)} de EBIT.</p></div></div>`;}
+  else if(c.code==='HAPV3'){const mlr=c.years.map((_,i)=>s.cst[i]!=null?-s.cst[i]/s.rev[i]:null);ch=`<div class="grid" style="margin-top:0"><div>${lineChart(c.years.slice(3),[{name:'Custo dos serviços ÷ receita',values:mlr.slice(3),color:'var(--i2)'},{name:'Margem EBITDA ajustada',values:H.slice(3).map(o=>o.mebitda),color:'var(--p2)'}],v=>pct(v,0),'Custos')}</div><div class="mini" style="align-self:center"><span>Queda de sinistralidade que zera o prejuízo</span><b>${nf(-s.ll[L]/(1-G.tax)/s.rev[L]*100,1)} p.p.</b><small>sinistralidade caixa: 72,4% (2024) → 74,1% (2025) → 75,2% (2T26)</small></div></div>`;}
+  const CX=custosExtra(c,H,V);
+  out+=anCard(2,'Custos e performance',`−1 p.p. de ${vname} vale ${spct(r1.PX1/base.PX0-1,0)} na ação`,
+   mini('Margem EBITDA',pct(H[L].mebitda),c.code==='HAPV3'?'ajustada, 12 meses':'12 meses')+mini('Δ EBIT com −1 p.p.','+'+mi(r1.EBIT1-base.EBIT0),'lucro '+((r1.LL1-base.LL0)>0?'+':'')+mi(r1.LL1-base.LL0))+mini('Δ ROE',pp((r1.ROE-base.LL0/base.PL0)*100),'mantido o múltiplo'),
+   ch+CX.body,CX.more,CX.calc+calc('Simulação em cadeia','Δ EBIT = 1% × receita ; Δ valor = Δ EBITDA × EV/EBITDA',`Δ EBIT = 1% × ${nf(base.R0)} = ${nf(base.R0*0.01)}\nΔ EV = ${nf(base.R0*0.01)} × ${nf(base.M0,2)} = ${nf(base.R0*0.01*base.M0)}\nΔ preço = R$ ${nf(base.R0*0.01*base.M0/base.SH*1e6,2)} por ação`));
+  /* 4 */
+  const vTitle=isN(V.gimp)?`O preço embute crescimento de ${pct(V.gimp)} ao ano, para sempre`:(A.label.startsWith('Desconto')?`Barata no EBITDA (${xx(V.evebitda,1)}), não no EBIT (${xx(V.evebit,1)})`:`${V.prem>0?'Prêmio':'Desconto'} de ${pct(Math.abs(V.prem),0)} contra ${c.peerName.split(' (')[0]}, com ROIC ${Math.abs(V.spread)<2?'empatando com':V.spread>0?'acima do':'abaixo do'} WACC`);
+  out+=anCard(3,'Valuation',vTitle,
+   mini('EV/EBITDA',xx(V.evebitda,1),'pares: '+xx(c.peer,1))+mini('ROIC × WACC',pct(V.roic)+' × '+pct(V.wacc),isN(V.roicx)?'sem ágio: '+pct(V.roicx):'EVA '+mi(V.eva),V.spread<-3)+mini(isN(V.gimp)?'Crescimento implícito':'EV/EBIT',isN(V.gimp)?pct(V.gimp):xx(V.evebit,1),isN(V.gimp)?'limiar: '+pct(G.glim):(c.peerEvebit?'pares: '+xx(c.peerEvebit,1):''),isN(V.gimp)&&V.gimp>G.glim),
+   `<div class="grid" style="margin-top:0"><div><p class="src" style="margin-bottom:4px">EV/EBITDA contra os pares</p>${barChart(peers.map(p=>({label:p.name,value:p.evebitda,hl:p.name===c.name})),v=>xx(v,1),'EV/EBITDA')}</div><div class="minis" style="grid-template-columns:1fr 1fr;align-content:start">${mini('Ke',pct(w.ke),'CAPM adaptado')}${mini('WACC',pct(w.wacc),'peso do PL '+pct(w.we,0))}<p class="src" style="grid-column:1/-1">Treasury ${pct(G.rf,2)} + beta ${nf(w.bl,2)} × ERP ${pct(G.erp,2)} + risco-país ${pct(G.embi*G.vol,2)}, em reais. Kd: Selic de longo prazo ${pct(G.selic,1)} + spread.</p>${(()=>{const kd2=SELIC_HOJE+w.spr,ke2=Math.max(w.keb,kd2+0.02),w2=w.we*ke2+(1-w.we)*kd2*(1-G.tax);return `<p class="src" style="grid-column:1/-1"><b>Com a Selic de hoje (${pct(SELIC_HOJE,2)})</b> em vez da de longo prazo: Kd ${pct(kd2,1)}, Ke ${pct(ke2,1)}, WACC ${pct(w2,1)} e ROIC − WACC de ${pp((V.roic-w2)*100)}${w.we>=0.999?' (sem dívida, a mudança vem só do piso do Ke, Kd + 2 p.p.)':''}${w.we<0.6?' Com muita dívida no capital, o WACC cai quando a Selic de longo prazo é usada: por isso mostramos as duas.':''}</p>`;})()}</div></div>`+(isN(V.gimp)?(()=>{const gw=x=>(V.ev*x-V.nopat)/(V.ev-V.nopat/V.roic),ws=[V.wacc-0.01,V.wacc,V.wacc+0.01],wl=V.nopat*(1-G.glim/V.roic)/V.ev+G.glim;return `<h4 class="sub">Sensibilidade ao custo de capital</h4><div class="minis">${ws.map((x,i)=>mini('WACC '+pct(x,1)+(i===1?' (atual)':''),pct(gw(x)),'crescimento implícito',gw(x)>G.glim)).join('')}</div><p class="src" style="margin-top:8px">O crescimento implícito só cai ao limiar de ${pct(G.glim)} com WACC de ${pct(wl)}. A leitura de preço exigente se mantém em toda a faixa de ±1 p.p.</p>`;})():'')+(c.code==='WEG'?(()=>{const D=5196.3,ev2=V.ev+D,g2=(ev2*V.wacc-V.nopat)/(ev2-V.nopat/V.roic);return `<div class="sowhat"><b>Ajuste de dividendos declarados</b><p>Em dez/25 a WEG aprovou ${mi(D)} de dividendos, pagos de 2026 a 2028. Esse caixa já pertence aos acionistas. Tratado como dívida, a caixa líquida vira dívida líquida, o EV/EBITDA vai de ${xx(V.evebitda,1)} para ${xx(ev2/c.s.ebitda[L],1)} e o crescimento implícito de ${pct(V.gimp)} para ${pct(g2)}. A conclusão de preço exigente fica mais forte.</p></div>`;})():''),'',
+   calc('EV/EBITDA','EV = valor de mercado + dívida líquida + minoritários',`EV = ${nf(V.mcap)} + ${nf(s.nd[L])} + ${nf(c.m.nci||0)} = ${nf(V.ev)}\nEV/EBITDA = ${nf(V.ev)} ÷ ${nf(s.ebitda[L])} = ${nf(V.evebitda,2)}`)+calc('ROIC e EVA','ROIC = EBIT × (1 − t) ÷ (PL + dívida líquida)',`NOPAT = ${nf(V.nopat)} ; capital = ${nf(V.cap)} ; ROIC = ${pct(V.roic,2)} ; EVA = ${nf(V.eva)}`)+(isN(V.gimp)?calc('Crescimento implícito','g = (EV × WACC − NOPAT) ÷ (EV − NOPAT ÷ ROIC)',`g = (${nf(V.ev)} × ${pct(V.wacc,2)} − ${nf(V.nopat)}) ÷ (${nf(V.ev)} − ${nf(V.nopat)} ÷ ${pct(V.roic,1)}) = ${pct(V.gimp,2)}`):'')+calc('Ke','Ke(US$) = Rf + βL × ERP + EMBI × 1,5 ; em R$ via inflação ; Ke ≥ Kd + 2 p.p.',`Ke US$ = ${pct(w.keu,2)} → R$ ${pct(w.keb,2)} ; piso ${pct(w.kd+0.02,2)} → ${pct(w.ke,2)}`,'Fontes: Damodaran (jan/2026), EMBI 171 p.b. (set/2026), Focus 19/10/2026.'));
+  /* 5 */
+  const m=MERC[c.code];
+  if(m){
+    const fill=t=>t.replace('{g}',pct(V.gimp)).replace('{roic}',pct(V.roic)).replace('{wacc}',pct(V.wacc)).replace('{ev}',xx(V.evebitda,1));
+    const ini=n=>n.replace(/[^A-Za-zÀ-ú ]/g,'').split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+    const li=(arr,cl)=>`<ul class="mk ${cl}">${arr.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`;
+    const body=`<div class="sowhat"><b>E daí para a tese</b><p>${esc(fill(m.link))}</p></div>
+     <div class="grid" style="margin-top:0">
+      <div><h4 class="sub">Concorrentes</h4><div class="rows">${m.comp.map(([n,d,mult],i)=>rowi(TILE[(i+2)%6],esc(n),esc(d),mult==='–'?'':esc(mult),mult==='–'?'':'EV/EBITDA','',ini(n))).join('')}</div><p class="src">${esc(m.compNote)}</p></div>
+      <div><h4 class="sub">Linha do tempo</h4><ol class="tl">${m.news.map(([d,t,f])=>`<li><time>${esc(d)}</time><div><p>${esc(t)}</p><small>${esc(f)}</small></div></li>`).join('')}</ol></div>
+     </div>
+     <h4 class="sub">Tendências do setor</h4>${li(m.trends,'tr')}
+     <div class="grid" style="margin-top:0">
+      <div class="ot up"><h4 class="sub">Oportunidades</h4>${li(m.opp,'')}</div>
+      <div class="ot dn"><h4 class="sub">Ameaças</h4>${li(m.thr,'')}</div>
+     </div>
+     <h4 class="sub">Vantagens competitivas</h4><div class="adv">${m.adv.map(x=>`<span>${esc(x)}</span>`).join('')}</div>
+     <p class="src" style="margin-top:14px">Visões de bancos (BTG, JPMorgan, BofA, Itaú BBA, Morgan Stanley, Bradesco BBI) citadas pela imprensa; os relatórios originais não foram lidos. Fontes: ${m.src.map(([t,u])=>`<a href="${u}" target="_blank" rel="noopener">${esc(t)}</a>`).join(' · ')}</p>`;
+    out+=anCard(4,'Mercado e estratégia',esc(m.title),m.pos.map(([l,v,sub])=>mini(l,v,sub)).join(''),body,'','');
+  } else out+=anCard(4,'Mercado e estratégia','O contexto que explica os números','','<p class="lead">Para empresas carregadas pelo modelo, o analista completa este capítulo: posicionamento, concorrentes, tendências, notícias, oportunidades, ameaças e vantagens competitivas.</p>','','');
+  return out+'</div>';
+}
+function sComite(c,A,V){
+  const [rc,txt]=reco(c,A),F=riskFlags(c,A),cf=counter(c,A),v=tally(c.ticker),mv=myVote(c.ticker),nv=v.a+v.r+v.m;
+  return `<div class="hero"><div class="lbl">Leitura para o comitê · gerada pelas regras · não é recomendação de investimento</div><div class="big" style="font-size:clamp(28px,6vw,40px)">${esc(rc)}</div><p style="margin:0;opacity:.92;max-width:70ch">${esc(txt)}</p>
+   <div class="vote" role="group" aria-label="Voto do comitê">${[['a','Aprovar'],['r','Rejeitar'],['m','Mais dados']].map(([k,l])=>`<button data-vote="${k}" aria-pressed="${mv===k}" class="${mv===k?'on':''}">${l}<b>${v[k]}</b></button>`).join('')}<button data-vote="z">${VMODE==='shared'?'Retirar meu voto':'Zerar'}</button></div>
+   <p class="vnote">${VMODE==='shared'?`Votos compartilhados: cada pessoa tem um voto por empresa, visível para todos que abrem este link. ${nv} ${nv===1?'voto':'votos'} até agora.`:'Votos salvos só neste navegador: o registro compartilhado não está disponível nesta visualização.'}${VERR?' '+esc(VERR):''}</p></div>
+  <div class="grid">
+   <div class="card"><h2><span class="dot"></span>Fundamentos da tese</h2><div class="rows">${A.tests.filter(t=>t.ok).map((t,i)=>rowi(ACOL[A.cls],esc(t.k),esc(t.note.charAt(0).toUpperCase()+t.note.slice(1)),esc(t.val),'','','✓')).join('')||'<p class="src">Nenhum teste disparou.</p>'}</div></div>
+   <div class="card"><h2><span class="dot"></span>Riscos da tese</h2><ol>${F.map(f=>`<li>${esc(f)}</li>`).join('')}</ol></div>
+   <div class="card full"><h2><span class="dot"></span>Pontos de monitoramento</h2><div class="rows">${cf.map((f,i)=>rowi(TILE[(i+1)%6],esc(f.t),'',esc(f.v.split(' (')[0]),f.v.includes('(')?esc('('+f.v.split(' (')[1]):'','',String(i+1))).join('')||'<p class="src">Sem gatilhos calculados.</p>'}</div></div>
+  </div>`;
+}
+function vCo(){
+  const c=COS[cur],A=archetype(c),V=A.V;
+  const titles={painel:'Painel',cascata:'Cascata',analises:'Análises',comite:'Modo Comitê'};
+  return topbar(esc(c.name),`${esc(c.ticker)} · ${esc(c.sector)} · ${titles[screen]}`)+({painel:sPainel,cascata:sCascata,analises:sAnalises,comite:sComite}[screen])(c,A,V);
+}
+function vNova(){
+  const t=Object.assign({},TEMPLATE); if(pending&&pending.peer){t.nome=pending.peer.name;t.ticker=pending.peer.ticker;t.setor=pending.peer.sector;t._comentario='Substitua os números de exemplo pelos da '+pending.peer.name+' (DFP/ITR ou release). Valores em R$ milhões.';}
+  const bank=pending&&pending.peer&&/Banco|Serviços financeiros/.test(pending.peer.sector);
+  return `<section class="newco"><div><div class="kicker">${pending&&pending.peer?esc(pending.peer.ticker)+' · ainda sem base':'Nova empresa'}</div>
+   <h1>${pending&&pending.peer?'Carregue a base da '+esc(pending.peer.name):'Analise qualquer empresa com a mesma régua'}</h1>
+   <p style="color:var(--ink-2);max-width:56ch">Cole DRE, balanço e mercado no formato padrão (o mesmo das DFPs da CVM). A Lente recalcula as cinco análises, a íris, a cascata e o comitê. Os números abaixo são de exemplo.</p>
+   ${bank?'<p class="err">Bancos não usam EBITDA nem EV/EBITDA: a Lente vai marcar esses indicadores como não aplicáveis.</p>':''}
+   <label for="json" class="kicker">Dados da empresa</label>
+   <textarea id="json" spellcheck="false">${esc(JSON.stringify(t,null,1))}</textarea>
+   <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;align-items:center"><button class="btn" id="go">Analisar</button><button class="btn ghost" id="copy">Copiar modelo</button><span id="msg" class="err" role="status"></span></div></div>
+   <div><h2 style="font-size:22px;margin-bottom:12px">O que a Lente faz sozinha</h2><ul class="rules">
+   <li>EBITDA ou PL negativos viram "Exceção", em vez de um múltiplo enganoso.</li><li>Fusão no período ou variação abaixo de 2%: GAO e GAF aparecem como "série quebrada" ou "instável".</li><li>Lucro negativo em um dos anos: GAF não interpretável.</li><li>Intangível maior que o PL: ROE tangível e P/VP bloqueados.</li><li>Dívida/EBITDA lida contra a régua do setor: industrial 1,5x, varejo 2,0x, saúde 2,5x, locação 3,0x, elétricas 4,0x.</li></ul></div></section>`;
+}
+function bindNova(){
+  document.getElementById('copy').onclick=()=>{const t=document.getElementById('json');navigator.clipboard.writeText(t.value).then(()=>{document.getElementById('msg').textContent='Copiado.';}).catch(()=>{t.select();document.getElementById('msg').textContent='Selecione e copie (Ctrl+C).';});};
+  document.getElementById('go').onclick=()=>{
+    const msg=document.getElementById('msg');
+    try{
+      const j=JSON.parse(document.getElementById('json').value);
+      const req=['nome','ticker','anos','receita','ebit','da','resultado_financeiro','lucro_liquido','despesas_operacionais','ativo_total','pl','divida_liquida','preco','acoes_mi','ev_ebitda_pares'];
+      const miss=req.filter(k=>j[k]==null); if(miss.length) throw new Error('Faltam campos: '+miss.join(', '));
+      const n=j.anos.length; if(n<2||n>6) throw new Error('Informe de 2 a 6 períodos em "anos".');
+      ['receita','ebit','da','resultado_financeiro','lucro_liquido','despesas_operacionais','ativo_total','pl','divida_liquida'].forEach(k=>{if(!Array.isArray(j[k])||j[k].length!==n) throw new Error(`"${k}" precisa ter ${n} valores, um por período.`);});
+      const pad=a=>{const out=Array(6).fill(null);a.forEach((v,i)=>out[6-n+i]=v);return out;};
+      const s={rev:pad(j.receita),ebit:pad(j.ebit),da:pad(j.da),fin:pad(j.resultado_financeiro),ll:pad(j.lucro_liquido),at:pad(j.ativo_total),pl:pad(j.pl),nd:pad(j.divida_liquida)};
+      s.ebitda=s.ebit.map((v,i)=>v==null?null:v+s.da[i]); s.lair=s.ebit.map((v,i)=>v==null?null:v+s.fin[i]);
+      s.fix=pad(j.despesas_operacionais).map((v,i)=>v==null?null:v+s.da[i]); s.plt=s.pl; s.comp=Array(6).fill(1);
+      if(j.intangivel) s.intang=pad(j.intangivel);
+      const yrs=pad(j.anos).map(v=>v??'');
+      const co={code:'X'+Date.now(),name:j.nome,ticker:String(j.ticker).toUpperCase(),sector:j.setor||'Setor não informado',kind:'industrial',years:yrs,s,builtin:false,
+        m:{px:j.preco,sh:j.acoes_mi*1e6,nci:j.minoritarios||0,exp:j.divida_exposta_selic??Math.max(0,j.divida_liquida[n-1]),regua:j.regua_divida_ebitda||2.5,bu:j.beta_setor||1,spread:j.spread_credito||0.015,t:j.aliquota??0.34},
+        peer:j.ev_ebitda_pares,peerName:j.nome_pares||'pares',peers:[],peerEvebit:j.ev_ebit_pares,expNote:'dívida líquida no CDI (premissa)',varName:'custo variável',question:'Qual é a tese?'};
+      const old=COS.findIndex(x=>x.ticker===co.ticker&&!x.builtin); if(old>=0) COS.splice(old,1);
+      COS.push(co); open(co.ticker);
+    }catch(e){msg.textContent=/JSON|Unexpected|token/i.test(e.message)?'O texto não é um JSON válido: confira vírgulas e aspas.':e.message;}
+  };
+}
+
+
+function render(){
+  CALCS=[];
+  const app=document.getElementById('app');
+  if(view==='home') app.innerHTML=vHome();
+  else if(view==='co') app.innerHTML=vCo();
+  else if(view==='peer') app.innerHTML=vPeer();
+  else app.innerHTML=topbar('Nova empresa','Analise qualquer empresa com a mesma régua')+vNova();
+  renderNav();
+  if(document.getElementById('q')) bindSearch('q');
+  if(document.getElementById('tq')) bindSearch('tq');
+  if(view==='nova') bindNova();
+  if(view==='co') bindCo();
+}
+function bindCo(){
+  document.querySelectorAll('[data-scen]').forEach(b=>b.onclick=()=>{const n=b.dataset.scen;scenName=n;levers=n==='Base'?[0,0,0,0,0,0]:[...SCEN[COS[cur].code][n]];keep(()=>render());});
+  document.querySelectorAll('.lever input').forEach(inp=>{
+    inp.oninput=()=>{const i=+inp.dataset.i,v=+inp.value;levers[i]=v;scenName='Personalizado';const F=[x=>spct(x,0),x=>pp(x*100,2),x=>spct(x,0),x=>pp(x*100,2),x=>(x>0?'+':'')+mi(x),x=>spct(x,0)];inp.previousElementSibling.querySelector('output').textContent=F[i](v);};
+    inp.onchange=()=>{const id=inp.id;keep(()=>render());const el=document.getElementById(id);if(el)el.focus({preventScroll:true});};
+  });
+  document.querySelectorAll('[data-vote]').forEach(b=>b.onclick=()=>castVote(COS[cur].ticker,b.dataset.vote));
+}
+
+/* ---------- votos do comitê: registro compartilhado (db) com recurso local ---------- */
+let VDB=null,VME=null,VALL={},VMODE='local',VERR='',VBUSY=false;
+function tally(t){if(VMODE==='shared'){const r={a:0,r:0,m:0};Object.values(VALL).forEach(d=>{const x=d&&d[t];if(x==='a'||x==='r'||x==='m')r[x]++;});return r;}return load('lente-votos-'+t,{a:0,r:0,m:0});}
+function myVote(t){return VMODE==='shared'?((VALL[VME]||{})[t]||null):null;}
+function onComite(){return view==='co'&&screen==='comite';}
+async function castVote(t,k){
+  if(VMODE!=='shared'){const key='lente-votos-'+t,v=load(key,{a:0,r:0,m:0});if(k==='z')store(key,{a:0,r:0,m:0});else{v[k]++;store(key,v);}keep(()=>render());return;}
+  if(VBUSY)return;VBUSY=true;VERR='';
+  const prev=VALL[VME]||{},next=Object.assign({},prev);
+  if(k==='z'||prev[t]===k)delete next[t];else next[t]=k;
+  VALL=Object.assign({},VALL,{[VME]:next});keep(()=>render());
+  try{await VDB.doc('votes/'+VME).set(next);}
+  catch(e){VALL=Object.assign({},VALL,{[VME]:prev});VERR=e&&e.code==='invalid_argument'?'Seu nível de acesso permite ver os votos, mas não votar.':'O voto não foi salvo; tente de novo.';keep(()=>render());}
+  finally{VBUSY=false;}
+}
+(async()=>{try{
+  if(!window.claude||typeof window.claude.use!=='function')return;
+  const db=await window.claude.use('db');if(!db)return;
+  const u=await window.claude.use('user');const id=u?await u.id():null;if(!id)return;
+  VDB=db;VME=id;VMODE='shared';
+  db.collection('votes').onSnapshot(snap=>{const m={};snap.docs.forEach(d=>{if(d.exists)m[d.id]=d.data()||{};});VALL=m;if(onComite())keep(()=>render());},
+    ()=>{VMODE='local';VDB=null;if(onComite())keep(()=>render());});
+  if(onComite())keep(()=>render());
+}catch(e){VMODE='local';}})();
+
+/* ---------- cotações ao vivo: API brapi.dev via Netlify Function (token fica no servidor) ---------- */
+let LIVE={status:'loading'};
+function applyQuotes(q){
+  let n=0;
+  COS.forEach(c=>{if(!c.builtin)return;const x=q&&q[c.ticker];
+    if(x&&typeof x.price==='number'&&x.price>0){if(c.m.px0==null)c.m.px0=c.m.px;c.m.px=x.price;c.live=x;n++;}});
+  return n;
+}
+(async()=>{
+  await null; const KEY='lente-cotacoes',TTL=30*60*1000;
+  try{const s=JSON.parse(localStorage.getItem(KEY)||'null');
+    if(s&&Date.now()-s.at<TTL&&applyQuotes(s.quotes)){LIVE={status:'ok'};keep(()=>render());return;}}catch(e){}
+  try{
+    const tk=COS.filter(c=>c.builtin).map(c=>c.ticker).join(',');
+    const r=await fetch('/.netlify/functions/cotacao?tickers='+encodeURIComponent(tk));
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const d=await r.json();
+    if(!applyQuotes(d.quotes))throw new Error('sem cotações');
+    LIVE={status:'ok'};
+    try{localStorage.setItem(KEY,JSON.stringify({at:Date.now(),quotes:d.quotes}));}catch(e){}
+  }catch(e){LIVE={status:'fail'};}
+  keep(()=>render());
+})();
+
+function keep(fn){const y=window.scrollY;fn();window.scrollTo({top:y});}
+document.addEventListener('click',e=>{
+  const n=e.target.closest('[data-nav]'); if(n&&!n.disabled){const k=n.dataset.nav;if(k==='home'){view='home';pending=null;}else{screen=k;view='co';}render();window.scrollTo({top:0});return;}
+  const o=e.target.closest('[data-open]'); if(o){open(o.dataset.open);return;}
+  const g=e.target.closest('[data-go]'); if(g){pending=null;view=g.dataset.go;render();window.scrollTo({top:0});return;}
+  const k=e.target.closest('[data-calc]'); if(k){const x=CALCS[+k.dataset.calc];openModal(`<div class="kicker">Memória de cálculo</div><h3>${esc(x.title)}</h3><pre>${esc(x.formula)}</pre><pre>${esc(x.subst)}</pre>${x.note?`<p class="src">${esc(x.note)}</p>`:''}`);}
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.getElementById('modal').innerHTML='';if(e.key==='Enter'){const o=e.target.closest&&e.target.closest('.rowi[data-open]');if(o)open(o.dataset.open);}});
+(function(){const h=(location.hash||'').slice(1).toUpperCase();const ci=COS.findIndex(c=>c.ticker===h);if(ci>=0){cur=ci;view='co';}render();})();
+</script>
+
+</body></html>
