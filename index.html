@@ -58,7 +58,7 @@ main{padding-block:12px 120px}
 .sugg .nm{font-weight:600;font-size:14px;line-height:1.25}
 .sugg .nm small{display:block;font-weight:500;color:var(--muted);font-size:12px}
 .st{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
-.st.ready{background:var(--good-soft);color:var(--good)} .st.peer{background:var(--p-soft);color:var(--p-ink)} .st.none{background:var(--tint);color:var(--muted)}
+.st.ready{background:var(--good-soft);color:var(--good)} .st.cvm{background:var(--j-soft);color:var(--j)} .st.peer{background:var(--p-soft);color:var(--p-ink)} .st.none{background:var(--tint);color:var(--muted)}
 
 /* hero card */
 .hero{background:linear-gradient(140deg,var(--p1),var(--p2));color:var(--on-p);border-radius:26px;padding:22px;position:relative;overflow:hidden;box-shadow:0 14px 30px rgba(90,63,214,.28)}
@@ -566,7 +566,7 @@ const DIR = [
  ['CMIG4','Cemig','Energia elétrica','none'],['KLBN11','Klabin','Papel e celulose','none']
 ].map(([ticker,name,sector,st])=>({ticker,name,sector,st}));
 const norm=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
-const STL={ready:'análise completa',peer:'comparável',none:'sem base'};
+const STL={ready:'análise completa',peer:'comparável',cvm:'dados da CVM',none:'sem base'};
 const PEEROF={MOVI3:'RENT3',RDOR3:'HAPV3'};
 
 
@@ -643,7 +643,7 @@ function bindSearch(id){
   const draw=()=>{
     const q=norm(inp.value.trim());
     const all=allEntries();
-    items=(q?all.filter(e=>norm(e.name).includes(q)||norm(e.ticker).startsWith(q)||norm(e.sector).split(/\s+/).some(w=>w.startsWith(q))):all.filter(e=>e.st!=='none')).sort((a,b)=>({ready:0,peer:1,none:2}[a.st]-{ready:0,peer:1,none:2}[b.st])).slice(0,8);
+    items=(q?all.filter(e=>norm(e.name).includes(q)||norm(e.ticker).startsWith(q)||norm(e.sector).split(/\s+/).some(w=>w.startsWith(q))):all.filter(e=>e.st!=='none'&&e.st!=='cvm')).sort((a,b)=>({ready:0,peer:1,cvm:2,none:3}[a.st]-{ready:0,peer:1,cvm:2,none:3}[b.st])).slice(0,8);
     if(q&&!items.length){list.innerHTML=`<li aria-disabled="true"><span class="tk" style="background:var(--muted)">?</span><span class="nm">Nenhuma empresa encontrada. Carregue os dados em "Nova empresa".</span><span></span></li>`;list.hidden=false;inp.setAttribute('aria-expanded','true');return;}
     sel=Math.min(sel,items.length-1);
     list.innerHTML=items.map((e,i)=>`<li role="option" id="${id}-o${i}" aria-selected="${i===sel}" data-tk="${e.ticker}"><span class="tk" style="background:${tileColor(e.ticker)}">${esc(e.name.charAt(0))}</span><span class="nm">${esc(e.name)}<small>${e.ticker} · ${esc(e.sector)}</small></span><span class="st ${e.st}">${STL[e.st]}</span></li>`).join('');
@@ -666,7 +666,7 @@ function open(tk){
   if(ci>=0){cur=ci;view='co';screen='painel';levers=[0,0,0,0,0,0];scenName='Base';render();window.scrollTo({top:0});return;}
   const e=DIR.find(d=>d.ticker===tk);
   if(e&&e.st==='peer'){pending={peer:e,of:COS[COS.findIndex(c=>c.ticker===PEEROF[tk])]};view='peer';render();return;}
-  pending={peer:e}; view='nova'; render(); window.scrollTo({top:0});
+  pending={peer:e,cvm:!!(e&&e.st==='cvm')}; view='nova'; render(); window.scrollTo({top:0});
 }
 const ICON={
  home:'<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>',
@@ -709,10 +709,13 @@ function vPeer(){
 
 /* ---------- company screens ---------- */
 function priceLabel(c){
+  if(c.src) return c.src.live?'Preço da ação · brapi.dev':'Preço da ação · informado';
   if(c.live) return `Preço da ação · ao vivo${c.live.changePct!=null?` <b>${spct(c.live.changePct/100,2)}</b> no dia`:''}`;
   return 'Preço da ação · 22/10/2026';
 }
 function priceSource(c){
+  if(c.src&&c.src.cvm) return `Fonte: DRE e balanço da CVM (DFP consolidada, atualizada em ${c.src.cvm.split('-').reverse().join('/')}); preço ${c.src.live?'da brapi.dev (atraso de ~30 min)':'informado na importação'}. Premissas de mercado informadas por você.`;
+  if(c.src) return 'Fonte: dados informados na importação.';
   if(c.live){const t=c.live.time?new Date(c.live.time):null;const h=t&&!isNaN(t)?t.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
     return `Fonte: API brapi.dev${h?' · cotação de '+h:''} (atraso de ~30 min). Todos os múltiplos e cenários usam este preço.`;}
   if(c.diverge) return `Checagem de consistência: a API brapi.dev trouxe ${brl(c.diverge.price)} (${spct(c.diverge.price/c.diverge.base-1)} sobre a base). A diferença é grande demais para o período, então mantivemos a cotação coletada manualmente em 22/10/2026 até conferir a fonte.`;
@@ -851,24 +854,48 @@ function vCo(){
 function vNova(){
   const t=Object.assign({},TEMPLATE); if(pending&&pending.peer){t.nome=pending.peer.name;t.ticker=pending.peer.ticker;t.setor=pending.peer.sector;t._comentario='Substitua os números de exemplo pelos da '+pending.peer.name+' (DFP/ITR ou release). Valores em R$ milhões.';}
   const bank=pending&&pending.peer&&/Banco|Serviços financeiros/.test(pending.peer.sector);
-  return `<section class="newco"><div><div class="kicker">${pending&&pending.peer?esc(pending.peer.ticker)+' · ainda sem base':'Nova empresa'}</div>
-   <h1>${pending&&pending.peer?'Carregue a base da '+esc(pending.peer.name):'Analise qualquer empresa com a mesma régua'}</h1>
-   <p style="color:var(--ink-2);max-width:56ch">Cole DRE, balanço e mercado no formato padrão (o mesmo das DFPs da CVM). A Lente recalcula as cinco análises, a íris, a cascata e o comitê. Os números abaixo são de exemplo.</p>
+  const cvm=pending&&pending.cvm;
+  return `<section class="newco"><div><div class="kicker">${cvm?esc(pending.peer.ticker)+' · dados da CVM':pending&&pending.peer?esc(pending.peer.ticker)+' · ainda sem base':'Nova empresa'}</div>
+   <h1>${cvm?'Base da '+esc(pending.peer.name)+' carregada da CVM':pending&&pending.peer?'Carregue a base da '+esc(pending.peer.name):'Analise qualquer empresa com a mesma régua'}</h1>
+   <p style="color:var(--ink-2);max-width:56ch">${cvm?'DRE e balanço vieram automaticamente das demonstrações financeiras (DFP) que a empresa entrega à CVM, e o preço vem ao vivo da brapi.dev. A CVM não traz dados de mercado dos concorrentes: informe o EV/EBITDA dos pares e confira as premissas antes de analisar.':'Cole DRE, balanço e mercado no formato padrão (o mesmo das DFPs da CVM). A Lente recalcula as cinco análises, a íris, a cascata e o comitê. Os números abaixo são de exemplo.'}</p>
    ${bank?'<p class="err">Bancos não usam EBITDA nem EV/EBITDA: a Lente vai marcar esses indicadores como não aplicáveis.</p>':''}
    <label for="json" class="kicker">Dados da empresa</label>
-   <textarea id="json" spellcheck="false">${esc(JSON.stringify(t,null,1))}</textarea>
+   <textarea id="json" spellcheck="false">${cvm?'Carregando os dados da CVM…':esc(JSON.stringify(t,null,1))}</textarea>
    <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;align-items:center"><button class="btn" id="go">Analisar</button><button class="btn ghost" id="copy">Copiar modelo</button><span id="msg" class="err" role="status"></span></div></div>
    <div><h2 style="font-size:22px;margin-bottom:12px">O que a Lente faz sozinha</h2><ul class="rules">
    <li>EBITDA ou PL negativos viram "Exceção", em vez de um múltiplo enganoso.</li><li>Fusão no período ou variação abaixo de 2%: GAO e GAF aparecem como "série quebrada" ou "instável".</li><li>Lucro negativo em um dos anos: GAF não interpretável.</li><li>Intangível maior que o PL: ROE tangível e P/VP bloqueados.</li><li>Dívida/EBITDA lida contra a régua do setor: industrial 1,5x, varejo 2,0x, saúde 2,5x, locação 3,0x, elétricas 4,0x.</li></ul></div></section>`;
 }
+async function prefillCVM(){
+  const tk=pending.peer.ticker, box=document.getElementById('json'), msg=document.getElementById('msg');
+  try{
+    const r=await fetch('data/cvm/'+tk+'.json'); if(!r.ok) throw new Error();
+    const d=await r.json();
+    let preco=null;
+    try{const q=await (await fetch('/.netlify/functions/cotacao?tickers='+tk)).json();const x=q.quotes&&q.quotes[tk];if(x&&typeof x.price==='number')preco=x.price;}catch(e){}
+    const j={
+      _comentario:`Balanços: ${d._fonte}, atualizado em ${d._atualizado.split('-').reverse().join('/')}. Preço: ${preco?'brapi.dev, ao vivo':'não encontrado, preencha'}. Preencha "ev_ebitda_pares" com o múltiplo dos concorrentes e confira as premissas (régua, beta, alíquota).`+(d._avisos.length?' Atenção: '+d._avisos.join(' '):''),
+      _origem:'cvm',_atualizado:d._atualizado,_preco_ao_vivo:!!preco,
+      nome:pending.peer.name||d.nome,ticker:tk,setor:d.setor,regua_divida_ebitda:2.5,beta_setor:1,spread_credito:0.015,aliquota:0.34,
+      ev_ebitda_pares:null,nome_pares:'pares',ev_ebit_pares:null,
+      preco,acoes_mi:d.acoes_mi,minoritarios:d.minoritarios,divida_exposta_selic:null,
+      anos:d.anos,receita:d.receita,ebit:d.ebit,da:d.da,resultado_financeiro:d.resultado_financeiro,lucro_liquido:d.lucro_liquido,
+      despesas_operacionais:d.despesas_operacionais,ativo_total:d.ativo_total,intangivel:d.intangivel,pl:d.pl,divida_liquida:d.divida_liquida
+    };
+    if(pending&&pending.peer&&pending.peer.ticker===tk){box.value=JSON.stringify(j,null,1);msg.textContent='Falta só o EV/EBITDA dos pares ("ev_ebitda_pares").';}
+  }catch(e){
+    box.value=JSON.stringify(TEMPLATE,null,1);
+    msg.textContent='Não consegui carregar os dados da CVM agora. Use o modelo abaixo ou tente de novo em alguns minutos.';
+  }
+}
 function bindNova(){
+  if(pending&&pending.cvm) prefillCVM();
   document.getElementById('copy').onclick=()=>{const t=document.getElementById('json');navigator.clipboard.writeText(t.value).then(()=>{document.getElementById('msg').textContent='Copiado.';}).catch(()=>{t.select();document.getElementById('msg').textContent='Selecione e copie (Ctrl+C).';});};
   document.getElementById('go').onclick=()=>{
     const msg=document.getElementById('msg');
     try{
       const j=JSON.parse(document.getElementById('json').value);
       const req=['nome','ticker','anos','receita','ebit','da','resultado_financeiro','lucro_liquido','despesas_operacionais','ativo_total','pl','divida_liquida','preco','acoes_mi','ev_ebitda_pares'];
-      const miss=req.filter(k=>j[k]==null); if(miss.length) throw new Error('Faltam campos: '+miss.join(', '));
+      const miss=req.filter(k=>j[k]==null); if(miss.length) throw new Error(miss.length===1&&miss[0]==='ev_ebitda_pares'?'Informe o EV/EBITDA dos pares em "ev_ebitda_pares": a CVM não traz dados de mercado dos concorrentes.':'Faltam campos: '+miss.join(', '));
       const n=j.anos.length; if(n<2||n>6) throw new Error('Informe de 2 a 6 períodos em "anos".');
       ['receita','ebit','da','resultado_financeiro','lucro_liquido','despesas_operacionais','ativo_total','pl','divida_liquida'].forEach(k=>{if(!Array.isArray(j[k])||j[k].length!==n) throw new Error(`"${k}" precisa ter ${n} valores, um por período.`);});
       const pad=a=>{const out=Array(6).fill(null);a.forEach((v,i)=>out[6-n+i]=v);return out;};
@@ -879,6 +906,7 @@ function bindNova(){
       const yrs=pad(j.anos).map(v=>v??'');
       const co={code:'X'+Date.now(),name:j.nome,ticker:String(j.ticker).toUpperCase(),sector:j.setor||'Setor não informado',kind:'industrial',years:yrs,s,builtin:false,
         m:{px:j.preco,sh:j.acoes_mi*1e6,nci:j.minoritarios||0,exp:j.divida_exposta_selic??Math.max(0,j.divida_liquida[n-1]),regua:j.regua_divida_ebitda||2.5,bu:j.beta_setor||1,spread:j.spread_credito||0.015,t:j.aliquota??0.34},
+        src:j._origem==='cvm'?{cvm:j._atualizado,live:!!j._preco_ao_vivo&&j.preco!=null}:{manual:true},
         peer:j.ev_ebitda_pares,peerName:j.nome_pares||'pares',peers:[],peerEvebit:j.ev_ebit_pares,expNote:'dívida líquida no CDI (premissa)',varName:'custo variável',question:'Qual é a tese?'};
       const old=COS.findIndex(x=>x.ticker===co.ticker&&!x.builtin); if(old>=0) COS.splice(old,1);
       COS.push(co); open(co.ticker);
@@ -933,6 +961,21 @@ async function castVote(t,k){
     ()=>{VMODE='local';VDB=null;if(onComite())keep(()=>render());});
   if(onComite())keep(()=>render());
 }catch(e){VMODE='local';}})();
+
+/* ---------- diretório da CVM: empresas com balanços carregados automaticamente pelo robô semanal ---------- */
+(async()=>{
+  try{
+    const r=await fetch('data/cvm/index.json'); if(!r.ok) return;
+    const d=await r.json(); const have=new Set(COS.filter(c=>c.builtin).map(c=>c.ticker));
+    const nice=s=>s.toLowerCase().replace(/(^|[\s(/-])(\p{L})/gu,(m,a,b)=>a+b.toUpperCase()).replace(/\b(S\.?a|Sa)\b\.?/g,'S.A.').replace(/\s+(De|Da|Do|Das|Dos|E)\s+/g,m=>m.toLowerCase());
+    (d.empresas||[]).forEach(e=>{
+      if(have.has(e.t)) return;
+      const x=DIR.find(k=>k.ticker===e.t);
+      if(x){ if(x.st==='none') x.st='cvm'; }
+      else DIR.push({ticker:e.t,name:nice(e.n),sector:e.s,st:'cvm'});
+    });
+  }catch(e){}
+})();
 
 /* ---------- cotações ao vivo: API brapi.dev via Netlify Function (token fica no servidor) ---------- */
 let LIVE={status:'loading'};
