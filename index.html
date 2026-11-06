@@ -857,7 +857,7 @@ function vNova(){
   const cvm=pending&&pending.cvm;
   return `<section class="newco"><div><div class="kicker">${cvm?esc(pending.peer.ticker)+' · dados da CVM':pending&&pending.peer?esc(pending.peer.ticker)+' · ainda sem base':'Nova empresa'}</div>
    <h1>${cvm?'Base da '+esc(pending.peer.name)+' carregada da CVM':pending&&pending.peer?'Carregue a base da '+esc(pending.peer.name):'Analise qualquer empresa com a mesma régua'}</h1>
-   <p style="color:var(--ink-2);max-width:56ch">${cvm?'DRE e balanço vieram automaticamente das demonstrações financeiras (DFP) que a empresa entrega à CVM, e o preço vem ao vivo da brapi.dev. A CVM não traz dados de mercado dos concorrentes: informe o EV/EBITDA dos pares e confira as premissas antes de analisar.':'Cole DRE, balanço e mercado no formato padrão (o mesmo das DFPs da CVM). A Lente recalcula as cinco análises, a íris, a cascata e o comitê. Os números abaixo são de exemplo.'}</p>
+   <p style="color:var(--ink-2);max-width:56ch">${cvm?'DRE e balanço vieram automaticamente das demonstrações financeiras (DFP) que a empresa entrega à CVM, o preço vem ao vivo da brapi.dev e os concorrentes são escolhidos pelo setor e pelo valor de mercado. Confira e clique em Analisar.':'Cole DRE, balanço e mercado no formato padrão (o mesmo das DFPs da CVM). A Lente recalcula as cinco análises, a íris, a cascata e o comitê. Os números abaixo são de exemplo.'}</p>
    ${bank?'<p class="err">Bancos não usam EBITDA nem EV/EBITDA: a Lente vai marcar esses indicadores como não aplicáveis.</p>':''}
    <label for="json" class="kicker">Dados da empresa</label>
    <textarea id="json" spellcheck="false">${cvm?'Carregando os dados da CVM…':esc(JSON.stringify(t,null,1))}</textarea>
@@ -978,15 +978,16 @@ async function peersCVM(tk){
   const me=CVMIDX.find(e=>e.t===tk); if(!me) return null;
   const w1=n=>norm(n).replace(/^(cia|companhia|grupo)\s+/,'').split(/\s+/)[0];
   const byT=Object.fromEntries(CVMIDX.map(e=>[e.t,e]));
-  const pick=list=>{const seen=new Set([me.c]),out=[];list.forEach(e=>{const c=byT[e.t];if(c&&!seen.has(c.c)&&w1(c.n)!==w1(me.n)&&out.length<8){seen.add(c.c);out.push(e);}});return out;};
+  const key=c=>c.c||c.n; // empresa (código CVM; nome se o índice for antigo)
+  const pick=list=>{const seen=new Set([key(me)]),out=[];list.forEach(e=>{const c=byT[e.t];if(c&&!seen.has(key(c))&&w1(c.n)!==w1(me.n)&&out.length<8){seen.add(key(c));out.push(e);}});return out;};
   let cand=[], crit='';
   const M=await mercado(), mm=M.find(x=>x.t===tk);
   if(mm){
     // pontuação: diferença de porte (valor de mercado) + 1 ponto se o setor de mercado for outro + 1 se o setor da CVM for outro.
     // Só entram empresas que coincidem em pelo menos um dos dois setores.
-    const gk=g=>norm(g||'').replace(/[^a-z\s]/g,' ').split(/\s+/).filter(Boolean).map(w=>w.slice(0,3)).join(' ');
-    const myG=gk(me.g);
-    const sc=x=>{const c=byT[x.t]; if(!c) return null; const ds=x.s!==mm.s, dg=gk(c.g)!==myG; if(ds&&dg) return null;
+    const gk=g=>norm((g||'').replace(/^Emp\. Adm\. Part\. - /,'')).replace(/[^a-z\s]/g,' ').split(/\s+/).filter(Boolean).map(w=>w.slice(0,3)).join(' ');
+    const myG=gk(me.g||me.s);
+    const sc=x=>{const c=byT[x.t]; if(!c) return null; const ds=x.s!==mm.s, dg=myG?gk(c.g||c.s)!==myG:true; if(ds&&dg) return null;
       return Math.abs(Math.log(x.mc/mm.mc))+(ds?1:0)+(dg?1:0);};
     cand=pick(M.filter(x=>x.t!==tk&&sc(x)!=null).sort((a,b)=>sc(a)-sc(b)));
     crit=`setor de mercado ("${mm.s}"), setor da CVM e valor de mercado parecido`;
