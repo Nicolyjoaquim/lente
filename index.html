@@ -774,6 +774,29 @@ function anCard(i,kicker,title,figs,chart,more,notes){
    ${figs?`<div class="minis">${figs}</div>`:''}${chart||''}${notes?`<div class="notes">${notes}</div>`:''}${more?`<details class="more"><summary>Ver números completos</summary><div>${more}</div></details>`:''}</div>`;
 }
 const mini=(l,v,s,al)=>`<div class="mini ${al?'alert':''}"><span>${l}</span><b>${v}</b>${s?`<small>${s}</small>`:''}</div>`;
+/* Capítulo "Mercado e estratégia" gerado por IA (Gemini + notícias da GNews) para empresas carregadas da CVM. */
+const MERC_ST={}, MERC_ERR={};
+async function gerarMercado(c){
+  MERC_ST[c.code]='loading';
+  const pares=(c.peerList||[]).map(r=>r.t);
+  try{
+    const r=await fetch(`/.netlify/functions/mercado?ticker=${encodeURIComponent(c.ticker)}&pares=${pares.join(',')}&nome=${encodeURIComponent(c.name)}`);
+    const d=await r.json(); if(!r.ok||d.error) throw new Error(d.error||('HTTP '+r.status));
+    const A=archetype(c),V=A.V,s=c.s,L=s.rev.length-1, prev=s.rev[L-1];
+    const pos=[['Crescimento da receita',prev?spct(s.rev[L]/prev-1,1):'–',`${c.years[L]} contra ${c.years[L-1]}`],
+      ['Margem EBITDA',s.rev[L]?pct(s.ebitda[L]/s.rev[L]):'–',`${c.years[L]}, CVM`],
+      ['EV/EBITDA',xx(V.evebitda,1),'pares: '+xx(c.peer,1)]];
+    MERC[c.code]={title:d.titulo,link:d.e_dai,pos,
+      comp:(c.peerList||[]).slice(0,5).map(p=>[p.n,d.concorrentes[p.t]||p.t,xx(p.m,1)]),
+      compNote:'EV/EBITDA calculado pela Lente com o balanço da CVM e o valor de mercado da brapi.dev. Descrições geradas por IA.',
+      news:d.noticias.map(n=>[n.data,n.resumo,n.fonte]),
+      trends:d.tendencias,opp:d.oportunidades,thr:d.ameacas,adv:d.vantagens,
+      src:d.noticias.map(n=>[n.fonte+' – '+n.titulo,n.url]),
+      ai:`Capítulo gerado por IA (${d.modelo}) em ${new Date(d.gerado_em).toLocaleDateString('pt-BR')}, a partir de ${d.n_noticias} notícias recentes (GNews) e dos números da CVM. Pode conter imprecisões: confira as fontes antes de usar.`};
+    MERC_ST[c.code]='ok';
+  }catch(e){MERC_ST[c.code]='fail';MERC_ERR[c.code]=/GEMINI|GNEWS/.test(e.message)?'Faltam as chaves da IA no Netlify (GEMINI_API_KEY e GNEWS_API_KEY).':'O serviço de IA não respondeu. Tente de novo em instantes.';}
+  if(view==='co'&&COS[cur]===c&&screen==='analises') keep(()=>render());
+}
 function sAnalises(c,A,V){
   const H=A.H,s=c.s,w=wacc(c);
   const trow=(lab,k,f,hl)=>`<tr${hl?' class="hl"':''}><td>${lab}</td>${H.map(o=>cell(o[k],f)).join('')}</tr>`;
@@ -789,6 +812,8 @@ function sAnalises(c,A,V){
    calc('GAO e GAF estruturais','GAO = (EBIT + custos fixos) ÷ EBIT ; GAF = EBIT ÷ LAIR',`GAO = (${nf(s.ebit[L])} + ${nf(s.fix[L])}) ÷ ${nf(s.ebit[L])} = ${isN(H[L].gaoe)?nf(H[L].gaoe,2):'n/i'}\nGAF = ${nf(s.ebit[L])} ÷ ${nf(s.lair[L])} = ${isN(H[L].gafe)?nf(H[L].gafe,2):'n/i'}`));
   /* 2 */
   const peers=[c.name,...c.peers].map(n=>DATA.comp.find(p=>p.name===n)).filter(Boolean);
+  const curto=n=>{const w=n.replace(/\s*\(.*$/,'').replace(/\s+S\.?A\.?$/i,'').split(/\s+/).filter(x=>!/^(empreendimentos|grupo|participa[çc][õo]es|cia|companhia|holding|de|da|do)$/i.test(x));let o=w.slice(0,2).join(' ');return o.length>14?w[0].slice(0,14):o;};
+  const peersV=c.peerList?[{name:c.name,evebitda:V.evebitda},...c.peerList.map(r=>({name:curto(r.n),evebitda:r.m}))].filter(p=>isN(p.evebitda)):peers;
   const me=isN(H[4].roe)?H[4]:H[L];const facs=[['ml','margem'],['giro','giro do ativo'],['mult','alavancagem']];
   let drv='';if(peers.length>1){const ps=peers.slice(1);const res=facs.map(([k,l])=>({l,r:me[k]/median(ps.map(q=>q[k]))}));drv=res.reduce((a,b)=>b.r>a.r?b:a).l;}
   const jump=isN(H[4].mult)&&isN(H[3].mult)&&H[4].mult-H[3].mult>0.3;
@@ -812,9 +837,10 @@ function sAnalises(c,A,V){
   const vTitle=isN(V.gimp)?`O preço embute crescimento de ${pct(V.gimp)} ao ano, para sempre`:(A.label.startsWith('Desconto')?`Barata no EBITDA (${xx(V.evebitda,1)}), não no EBIT (${xx(V.evebit,1)})`:`${V.prem>0?'Prêmio':'Desconto'} de ${pct(Math.abs(V.prem),0)} contra ${c.peerName.split(' (')[0]}, com ROIC ${Math.abs(V.spread)<2?'empatando com':V.spread>0?'acima do':'abaixo do'} WACC`);
   out+=anCard(3,'Valuation',vTitle,
    mini('EV/EBITDA',xx(V.evebitda,1),'pares: '+xx(c.peer,1))+mini('ROIC × WACC',pct(V.roic)+' × '+pct(V.wacc),isN(V.roicx)?'sem ágio: '+pct(V.roicx):'EVA '+mi(V.eva),V.spread<-3)+mini(isN(V.gimp)?'Crescimento implícito':'EV/EBIT',isN(V.gimp)?pct(V.gimp):xx(V.evebit,1),isN(V.gimp)?'limiar: '+pct(G.glim):(c.peerEvebit?'pares: '+xx(c.peerEvebit,1):''),isN(V.gimp)&&V.gimp>G.glim),
-   `<div class="grid" style="margin-top:0"><div><p class="src" style="margin-bottom:4px">EV/EBITDA contra os pares</p>${barChart(peers.map(p=>({label:p.name,value:p.evebitda,hl:p.name===c.name})),v=>xx(v,1),'EV/EBITDA')}</div><div class="minis" style="grid-template-columns:1fr 1fr;align-content:start">${mini('Ke',pct(w.ke),'CAPM adaptado')}${mini('WACC',pct(w.wacc),'peso do PL '+pct(w.we,0))}<p class="src" style="grid-column:1/-1">Treasury ${pct(G.rf,2)} + beta ${nf(w.bl,2)} × ERP ${pct(G.erp,2)} + risco-país ${pct(G.embi*G.vol,2)}, em reais. Kd: Selic de longo prazo ${pct(G.selic,1)} + spread.</p>${(()=>{const kd2=SELIC_HOJE+w.spr,ke2=Math.max(w.keb,kd2+0.02),w2=w.we*ke2+(1-w.we)*kd2*(1-G.tax);return `<p class="src" style="grid-column:1/-1"><b>Com a Selic de hoje (${pct(SELIC_HOJE,2)})</b> em vez da de longo prazo: Kd ${pct(kd2,1)}, Ke ${pct(ke2,1)}, WACC ${pct(w2,1)} e ROIC − WACC de ${pp((V.roic-w2)*100)}${w.we>=0.999?' (sem dívida, a mudança vem só do piso do Ke, Kd + 2 p.p.)':''}${w.we<0.6?' Com muita dívida no capital, o WACC cai quando a Selic de longo prazo é usada: por isso mostramos as duas.':''}</p>`;})()}</div></div>`+(isN(V.gimp)?(()=>{const gw=x=>(V.ev*x-V.nopat)/(V.ev-V.nopat/V.roic),ws=[V.wacc-0.01,V.wacc,V.wacc+0.01],wl=V.nopat*(1-G.glim/V.roic)/V.ev+G.glim;return `<h4 class="sub">Sensibilidade ao custo de capital</h4><div class="minis">${ws.map((x,i)=>mini('WACC '+pct(x,1)+(i===1?' (atual)':''),pct(gw(x)),'crescimento implícito',gw(x)>G.glim)).join('')}</div><p class="src" style="margin-top:8px">O crescimento implícito só cai ao limiar de ${pct(G.glim)} com WACC de ${pct(wl)}. A leitura de preço exigente se mantém em toda a faixa de ±1 p.p.</p>`;})():'')+(c.code==='WEG'?(()=>{const D=5196.3,ev2=V.ev+D,g2=(ev2*V.wacc-V.nopat)/(ev2-V.nopat/V.roic);return `<div class="sowhat"><b>Ajuste de dividendos declarados</b><p>Em dez/25 a WEG aprovou ${mi(D)} de dividendos, pagos de 2026 a 2028. Esse caixa já pertence aos acionistas. Tratado como dívida, a caixa líquida vira dívida líquida, o EV/EBITDA vai de ${xx(V.evebitda,1)} para ${xx(ev2/c.s.ebitda[L],1)} e o crescimento implícito de ${pct(V.gimp)} para ${pct(g2)}. A conclusão de preço exigente fica mais forte.</p></div>`;})():''),'',
+   `<div class="grid" style="margin-top:0"><div><p class="src" style="margin-bottom:4px">EV/EBITDA contra os pares</p>${barChart(peersV.map(p=>({label:p.name,value:p.evebitda,hl:p.name===c.name})),v=>xx(v,1),'EV/EBITDA')}</div><div class="minis" style="grid-template-columns:1fr 1fr;align-content:start">${mini('Ke',pct(w.ke),'CAPM adaptado')}${mini('WACC',pct(w.wacc),'peso do PL '+pct(w.we,0))}<p class="src" style="grid-column:1/-1">Treasury ${pct(G.rf,2)} + beta ${nf(w.bl,2)} × ERP ${pct(G.erp,2)} + risco-país ${pct(G.embi*G.vol,2)}, em reais. Kd: Selic de longo prazo ${pct(G.selic,1)} + spread.</p>${(()=>{const kd2=SELIC_HOJE+w.spr,ke2=Math.max(w.keb,kd2+0.02),w2=w.we*ke2+(1-w.we)*kd2*(1-G.tax);return `<p class="src" style="grid-column:1/-1"><b>Com a Selic de hoje (${pct(SELIC_HOJE,2)})</b> em vez da de longo prazo: Kd ${pct(kd2,1)}, Ke ${pct(ke2,1)}, WACC ${pct(w2,1)} e ROIC − WACC de ${pp((V.roic-w2)*100)}${w.we>=0.999?' (sem dívida, a mudança vem só do piso do Ke, Kd + 2 p.p.)':''}${w.we<0.6?' Com muita dívida no capital, o WACC cai quando a Selic de longo prazo é usada: por isso mostramos as duas.':''}</p>`;})()}</div></div>`+(isN(V.gimp)?(()=>{const gw=x=>(V.ev*x-V.nopat)/(V.ev-V.nopat/V.roic),ws=[V.wacc-0.01,V.wacc,V.wacc+0.01],wl=V.nopat*(1-G.glim/V.roic)/V.ev+G.glim;return `<h4 class="sub">Sensibilidade ao custo de capital</h4><div class="minis">${ws.map((x,i)=>mini('WACC '+pct(x,1)+(i===1?' (atual)':''),pct(gw(x)),'crescimento implícito',gw(x)>G.glim)).join('')}</div><p class="src" style="margin-top:8px">O crescimento implícito só cai ao limiar de ${pct(G.glim)} com WACC de ${pct(wl)}. A leitura de preço exigente se mantém em toda a faixa de ±1 p.p.</p>`;})():'')+(c.code==='WEG'?(()=>{const D=5196.3,ev2=V.ev+D,g2=(ev2*V.wacc-V.nopat)/(ev2-V.nopat/V.roic);return `<div class="sowhat"><b>Ajuste de dividendos declarados</b><p>Em dez/25 a WEG aprovou ${mi(D)} de dividendos, pagos de 2026 a 2028. Esse caixa já pertence aos acionistas. Tratado como dívida, a caixa líquida vira dívida líquida, o EV/EBITDA vai de ${xx(V.evebitda,1)} para ${xx(ev2/c.s.ebitda[L],1)} e o crescimento implícito de ${pct(V.gimp)} para ${pct(g2)}. A conclusão de preço exigente fica mais forte.</p></div>`;})():''),'',
    calc('EV/EBITDA','EV = valor de mercado + dívida líquida + minoritários',`EV = ${nf(V.mcap)} + ${nf(s.nd[L])} + ${nf(c.m.nci||0)} = ${nf(V.ev)}\nEV/EBITDA = ${nf(V.ev)} ÷ ${nf(s.ebitda[L])} = ${nf(V.evebitda,2)}`)+calc('ROIC e EVA','ROIC = EBIT × (1 − t) ÷ (PL + dívida líquida)',`NOPAT = ${nf(V.nopat)} ; capital = ${nf(V.cap)} ; ROIC = ${pct(V.roic,2)} ; EVA = ${nf(V.eva)}`)+(isN(V.gimp)?calc('Crescimento implícito','g = (EV × WACC − NOPAT) ÷ (EV − NOPAT ÷ ROIC)',`g = (${nf(V.ev)} × ${pct(V.wacc,2)} − ${nf(V.nopat)}) ÷ (${nf(V.ev)} − ${nf(V.nopat)} ÷ ${pct(V.roic,1)}) = ${pct(V.gimp,2)}`):'')+calc('Ke','Ke(US$) = Rf + βL × ERP + EMBI × 1,5 ; em R$ via inflação ; Ke ≥ Kd + 2 p.p.',`Ke US$ = ${pct(w.keu,2)} → R$ ${pct(w.keb,2)} ; piso ${pct(w.kd+0.02,2)} → ${pct(w.ke,2)}`,'Fontes: Damodaran (jan/2026), EMBI 171 p.b. (set/2026), Focus 19/10/2026.'));
   /* 5 */
+  if(!MERC[c.code]&&c.src&&c.src.cvm&&!MERC_ST[c.code]) gerarMercado(c);
   const m=MERC[c.code];
   if(m){
     const fill=t=>t.replace('{g}',pct(V.gimp)).replace('{roic}',pct(V.roic)).replace('{wacc}',pct(V.wacc)).replace('{ev}',xx(V.evebitda,1));
@@ -831,8 +857,13 @@ function sAnalises(c,A,V){
       <div class="ot dn"><h4 class="sub">Ameaças</h4>${li(m.thr,'')}</div>
      </div>
      <h4 class="sub">Vantagens competitivas</h4><div class="adv">${m.adv.map(x=>`<span>${esc(x)}</span>`).join('')}</div>
-     <p class="src" style="margin-top:14px">Visões de bancos (BTG, JPMorgan, BofA, Itaú BBA, Morgan Stanley, Bradesco BBI) citadas pela imprensa; os relatórios originais não foram lidos. Fontes: ${m.src.map(([t,u])=>`<a href="${u}" target="_blank" rel="noopener">${esc(t)}</a>`).join(' · ')}</p>`;
+     <p class="src" style="margin-top:14px">${m.ai?esc(m.ai)+' Fontes:':'Visões de bancos (BTG, JPMorgan, BofA, Itaú BBA, Morgan Stanley, Bradesco BBI) citadas pela imprensa; os relatórios originais não foram lidos. Fontes:'} ${m.src.map(([t,u])=>`<a href="${u}" target="_blank" rel="noopener">${esc(t)}</a>`).join(' · ')}</p>`;
     out+=anCard(4,'Mercado e estratégia',esc(m.title),m.pos.map(([l,v,sub])=>mini(l,v,sub)).join(''),body,'','');
+  } else if(c.src&&c.src.cvm){
+    const st=MERC_ST[c.code]||'loading';
+    out+=anCard(4,'Mercado e estratégia',st==='fail'?'Não consegui gerar este capítulo agora':'Gerando o capítulo com IA…','',st==='fail'
+      ?`<p class="lead">${esc(MERC_ERR[c.code]||'O serviço de IA não respondeu.')} </p><button class="btn ghost" data-retry-merc="${esc(c.code)}">Tentar de novo</button>`
+      :'<p class="lead">Buscando notícias recentes da empresa e escrevendo posicionamento, concorrentes, tendências, oportunidades, ameaças e vantagens competitivas. Leva de 10 a 30 segundos.</p>','','');
   } else out+=anCard(4,'Mercado e estratégia','O contexto que explica os números','','<p class="lead">Para empresas carregadas pelo modelo, o analista completa este capítulo: posicionamento, concorrentes, tendências, notícias, oportunidades, ameaças e vantagens competitivas.</p>','','');
   return out+'</div>';
 }
@@ -1075,6 +1106,7 @@ function keep(fn){const y=window.scrollY;fn();window.scrollTo({top:y});}
 document.addEventListener('click',e=>{
   const n=e.target.closest('[data-nav]'); if(n&&!n.disabled){const k=n.dataset.nav;if(k==='home'){view='home';pending=null;}else{screen=k;view='co';}render();window.scrollTo({top:0});return;}
   const o=e.target.closest('[data-open]'); if(o){open(o.dataset.open);return;}
+  const rm=e.target.closest('[data-retry-merc]'); if(rm){const c=COS.find(x=>x.code===rm.dataset.retryMerc); if(c){MERC_ST[c.code]=null; render(); gerarMercado(c);} return;}
   const g=e.target.closest('[data-go]'); if(g){pending=null;view=g.dataset.go;render();window.scrollTo({top:0});return;}
   const k=e.target.closest('[data-calc]'); if(k){const x=CALCS[+k.dataset.calc];openModal(`<div class="kicker">Memória de cálculo</div><h3>${esc(x.title)}</h3><pre>${esc(x.formula)}</pre><pre>${esc(x.subst)}</pre>${x.note?`<p class="src">${esc(x.note)}</p>`:''}`);}
 });
