@@ -982,8 +982,14 @@ async function peersCVM(tk){
   let cand=[], crit='';
   const M=await mercado(), mm=M.find(x=>x.t===tk);
   if(mm){
-    cand=pick(M.filter(x=>x.s===mm.s&&x.t!==tk).sort((a,b)=>Math.abs(Math.log(a.mc/mm.mc))-Math.abs(Math.log(b.mc/mm.mc))));
-    crit=`setor de mercado "${mm.s}" e valor de mercado parecido`;
+    // pontuação: diferença de porte (valor de mercado) + 1 ponto se o setor de mercado for outro + 1 se o setor da CVM for outro.
+    // Só entram empresas que coincidem em pelo menos um dos dois setores.
+    const gk=g=>norm(g||'').replace(/[^a-z\s]/g,' ').split(/\s+/).filter(Boolean).map(w=>w.slice(0,3)).join(' ');
+    const myG=gk(me.g);
+    const sc=x=>{const c=byT[x.t]; if(!c) return null; const ds=x.s!==mm.s, dg=gk(c.g)!==myG; if(ds&&dg) return null;
+      return Math.abs(Math.log(x.mc/mm.mc))+(ds?1:0)+(dg?1:0);};
+    cand=pick(M.filter(x=>x.t!==tk&&sc(x)!=null).sort((a,b)=>sc(a)-sc(b)));
+    crit=`setor de mercado ("${mm.s}"), setor da CVM e valor de mercado parecido`;
   }
   if(cand.length<2&&me.r){
     cand=pick(CVMIDX.filter(e=>e.g===me.g&&e.r>0).sort((a,b)=>Math.abs(Math.log(a.r/me.r))-Math.abs(Math.log(b.r/me.r))));
