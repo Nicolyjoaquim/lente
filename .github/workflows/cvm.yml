@@ -1,0 +1,28 @@
+name: Atualizar dados da CVM
+
+on:
+  schedule:
+    - cron: "17 9 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  coleta:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Baixar balanços da CVM e gerar os arquivos da Lente
+        run: python scripts/cvm_coleta.py
+      - name: Salvar no repositório
+        run: |
+          git config user.name "lente-robo"
+          git config user.email "lente-robo@users.noreply.github.com"
+          git add data/cvm
+          git diff --cached --quiet && echo "Sem mudanças" && exit 0
+          git commit -m "Atualiza dados da CVM ($(date +%Y-%m-%d))"
+          git push
