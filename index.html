@@ -872,16 +872,17 @@ async function prefillCVM(){
     const d=await r.json();
     let preco=null;
     try{const q=await (await fetch('/.netlify/functions/cotacao?tickers='+tk)).json();const x=q.quotes&&q.quotes[tk];if(x&&typeof x.price==='number')preco=x.price;}catch(e){}
+    const P=await peersCVM(tk).catch(()=>null);
     const j={
-      _comentario:`Balanços: ${d._fonte}, atualizado em ${d._atualizado.split('-').reverse().join('/')}. Preço: ${preco?'brapi.dev, ao vivo':'não encontrado, preencha'}. Preencha "ev_ebitda_pares" com o múltiplo dos concorrentes e confira as premissas (régua, beta, alíquota).`+(d._avisos.length?' Atenção: '+d._avisos.join(' '):''),
+      _comentario:`Balanços: ${d._fonte}, atualizado em ${d._atualizado.split('-').reverse().join('/')}. Preço: ${preco?'brapi.dev, ao vivo':'não encontrado, preencha'}. ${P?`Pares escolhidos automaticamente por ${P.crit}: mediana de ${P.n} ${P.n===1?'empresa':'empresas'}${P.n<3?' (poucos pares: confira)':''}. Troque se quiser outros concorrentes.`:'Preencha "ev_ebitda_pares" com o múltiplo dos concorrentes.'} Confira as premissas (régua, beta, alíquota).`+(d._avisos.length?' Atenção: '+d._avisos.join(' '):''),
       _origem:'cvm',_atualizado:d._atualizado,_preco_ao_vivo:!!preco,
       nome:pending.peer.name||d.nome,ticker:tk,setor:d.setor,regua_divida_ebitda:2.5,beta_setor:1,spread_credito:0.015,aliquota:0.34,
-      ev_ebitda_pares:null,nome_pares:'pares',ev_ebit_pares:null,
+      ev_ebitda_pares:P?+P.evebitda.toFixed(2):null,nome_pares:P?P.nomes.join(', '):'pares',ev_ebit_pares:P&&P.evebit?+P.evebit.toFixed(2):null,
       preco,acoes_mi:d.acoes_mi,minoritarios:d.minoritarios,divida_exposta_selic:null,
       anos:d.anos,receita:d.receita,ebit:d.ebit,da:d.da,resultado_financeiro:d.resultado_financeiro,lucro_liquido:d.lucro_liquido,
       despesas_operacionais:d.despesas_operacionais,ativo_total:d.ativo_total,intangivel:d.intangivel,pl:d.pl,divida_liquida:d.divida_liquida
     };
-    if(pending&&pending.peer&&pending.peer.ticker===tk){box.value=JSON.stringify(j,null,1);msg.textContent='Falta só o EV/EBITDA dos pares ("ev_ebitda_pares").';}
+    if(pending&&pending.peer&&pending.peer.ticker===tk){box.value=JSON.stringify(j,null,1);msg.textContent=P?'Tudo preenchido. Confira os pares sugeridos e clique em Analisar.':'Não achei concorrentes suficientes no mesmo setor: informe o EV/EBITDA dos pares ("ev_ebitda_pares").';}
   }catch(e){
     box.value=JSON.stringify(TEMPLATE,null,1);
     msg.textContent='Não consegui carregar os dados da CVM agora. Use o modelo abaixo ou tente de novo em alguns minutos.';
@@ -962,11 +963,54 @@ async function castVote(t,k){
   if(onComite())keep(()=>render());
 }catch(e){VMODE='local';}})();
 
+let CVMIDX=[];
+/* Sugere concorrentes automaticamente.
+   1º critério (dados de mercado): mesmo setor de mercado da bolsa e valor de mercado parecido (lista da brapi.dev).
+   Reserva: mesmo setor da CVM e receita parecida. Em ambos, uma ação por empresa e sem holdings do mesmo grupo.
+   EV/EBITDA e EV/EBIT de cada par = (valor de mercado + dívida líquida + minoritários) ÷ EBITDA ou EBIT, com o balanço da CVM. */
+let MKT=null;
+async function mercado(){
+  if(MKT) return MKT;
+  try{const r=await fetch('/.netlify/functions/cotacao?lista=1'); const d=await r.json(); MKT=(d.lista||[]).filter(x=>x.t&&x.s&&x.mc>0);}catch(e){MKT=[];}
+  return MKT;
+}
+async function peersCVM(tk){
+  const me=CVMIDX.find(e=>e.t===tk); if(!me) return null;
+  const w1=n=>norm(n).replace(/^(cia|companhia|grupo)\s+/,'').split(/\s+/)[0];
+  const byT=Object.fromEntries(CVMIDX.map(e=>[e.t,e]));
+  const pick=list=>{const seen=new Set([me.c]),out=[];list.forEach(e=>{const c=byT[e.t];if(c&&!seen.has(c.c)&&w1(c.n)!==w1(me.n)&&out.length<8){seen.add(c.c);out.push(e);}});return out;};
+  let cand=[], crit='';
+  const M=await mercado(), mm=M.find(x=>x.t===tk);
+  if(mm){
+    cand=pick(M.filter(x=>x.s===mm.s&&x.t!==tk).sort((a,b)=>Math.abs(Math.log(a.mc/mm.mc))-Math.abs(Math.log(b.mc/mm.mc))));
+    crit=`setor de mercado "${mm.s}" e valor de mercado parecido`;
+  }
+  if(cand.length<2&&me.r){
+    cand=pick(CVMIDX.filter(e=>e.g===me.g&&e.r>0).sort((a,b)=>Math.abs(Math.log(a.r/me.r))-Math.abs(Math.log(b.r/me.r))));
+    crit=`setor "${me.g}" da CVM e receita parecida`;
+  }
+  if(!cand.length) return null;
+  const files=await Promise.all(cand.map(e=>fetch('data/cvm/'+e.t+'.json').then(r=>r.ok?r.json():null).catch(()=>null)));
+  let prices={};
+  const semMC=cand.filter(e=>!e.mc).map(e=>e.t);
+  if(semMC.length){try{prices=(await (await fetch('/.netlify/functions/cotacao?tickers='+semMC.join(','))).json()).quotes||{};}catch(e){}}
+  const rows=[];
+  cand.forEach((e,i)=>{const d=files[i]; if(!d) return;
+    const mcap=e.mc?e.mc/1e6:(prices[e.t]&&d.acoes_mi?prices[e.t].price*d.acoes_mi:null); if(!mcap) return;
+    const L=d.anos.length-1, ebit=d.ebit[L], ebitda=ebit+(d.da[L]||0), ev=mcap+(d.divida_liquida[L]||0)+(d.minoritarios||0);
+    if(!(ebitda>0)||!(ev>0)) return;
+    const m=ev/ebitda; if(m>40) return; // múltiplo distorcido por EBITDA muito baixo
+    rows.push({t:e.t,n:byT[e.t].n,evebitda:m,evebit:ebit>0?ev/ebit:null});});
+  if(!rows.length) return null;
+  const nice=r=>(DIR.find(k=>k.ticker===r.t)?.name||r.n).replace(/\s+-\s+Em Recupera.*$/i,' (em RJ)').replace(/\s+S\.?A\.?$/i,'');
+  return {evebitda:median(rows.map(r=>r.evebitda)),evebit:rows.some(r=>r.evebit)?median(rows.filter(r=>r.evebit).map(r=>r.evebit)):null,
+    nomes:rows.slice(0,5).map(r=>nice(r)+' ('+r.t+')'),n:rows.length,crit};
+}
 /* ---------- diretório da CVM: empresas com balanços carregados automaticamente pelo robô semanal ---------- */
 (async()=>{
   try{
     const r=await fetch('data/cvm/index.json'); if(!r.ok) return;
-    const d=await r.json(); const have=new Set(COS.filter(c=>c.builtin).map(c=>c.ticker));
+    const d=await r.json(); CVMIDX=d.empresas||[]; const have=new Set(COS.filter(c=>c.builtin).map(c=>c.ticker));
     const nice=s=>s.toLowerCase().replace(/(^|[\s(/-])(\p{L})/gu,(m,a,b)=>a+b.toUpperCase()).replace(/\b(S\.?a|Sa)\b\.?/g,'S.A.').replace(/\s+(De|Da|Do|Das|Dos|E)\s+/g,m=>m.toLowerCase());
     (d.empresas||[]).forEach(e=>{
       if(have.has(e.t)) return;
