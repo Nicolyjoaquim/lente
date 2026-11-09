@@ -281,6 +281,8 @@ textarea{border-radius:8px}
 .modal{border-radius:12px}
 .modal pre{border-radius:6px}
 .tl li::before{background:var(--p-ink)}
+.scenbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;background:var(--p-soft);border:1px solid var(--hair);border-left:4px solid var(--p2);border-radius:8px;padding:12px 14px;margin-bottom:14px}
+.scenbar b{display:block;color:var(--p-ink);font-size:14px}.scenbar span{font-size:13px;color:var(--ink-2)}
 /* abas travadas até escolher uma empresa */
 .nav button.locked{opacity:.45}
 .navhint{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:26;background:var(--ink);color:var(--bg);font-size:13px;padding:8px 14px;border-radius:6px;max-width:calc(100% - 32px);text-align:center}
@@ -345,7 +347,7 @@ const SCEN = {
 const L = 5; // LTM index
 function at(a,i){return a&&isN(a[i])?a[i]:null;}
 function wacc(c){
-  if(c.w && c.builtin) return c.w;
+  if(c.w && (c.builtin||c.scen)) return c.w;
   const m=c.m, nd=at(c.s.nd,L), E=m.px*m.sh/1e6, D=Math.max(0,nd);
   const de=D/E, bl=m.bu*(1+(1-G.tax)*de), keu=G.rf+bl*G.erp+G.embi*G.vol;
   const keb=(1+keu)*(1+G.pib)/(1+G.pus)-1, kd=G.selic+m.spread, kdp=kd*(1-G.tax), ke=Math.max(keb,kd+0.02), we=E/(E+D);
@@ -453,6 +455,31 @@ function sim(c,lv){
   const GAO=Math.abs(gR)>1e-4&&isN(gE)?gE/gR:null, GAF=isN(gL)&&isN(gE)&&Math.abs(gE)>1e-4?gL/gE:null;
   return {P,R1,EBIT1,EBITDA1,FIN1,LAIR1,LL1,ND1,M1,EV1,EQ1,PX1,ROE,ROIC,WACC1,gR,gE,gL,GAO,GAF,
     NDE:EBITDA1>0?ND1/EBITDA1:null,COB:FIN1>=0?null:EBIT1/-FIN1};
+}
+/* Cenário da Cascata aplicado às outras abas: copia a empresa e troca o último período pelos números do cenário */
+const LVN=['vendas','custo variável','custos fixos','Selic','dívida líquida','múltiplo'];
+function lvTxt(lv,c){return lv.map((v,i)=>{if(!v) return null;const n=i===1?c.varName.split(' (')[0]:LVN[i];
+  return n+' '+(i===1||i===3?pp(v*100,2):i===4?(v>0?'+':'')+mi(v):spct(v,0));}).filter(Boolean).join(', ').replace(/^./,x=>x.toUpperCase());}
+let SCO={key:null,co:null};
+function scenCo(c){
+  if(!levers.some(v=>v)) return c;
+  const key=c.code+'|'+levers.join(',');
+  if(SCO.key===key) return SCO.co;
+  const r=sim(c,levers), P=r.P, w0=wacc(c);
+  const co=Object.assign({},c);
+  co.s=Object.fromEntries(Object.entries(c.s).map(([k,v])=>[k,Array.isArray(v)?v.slice():v]));
+  co.m=Object.assign({},c.m,{px:r.PX1>0?r.PX1:c.m.px*0.01});
+  const S=co.s;
+  S.rev[L]=r.R1; S.ebit[L]=r.EBIT1; S.ebitda[L]=r.EBITDA1; S.fin[L]=r.FIN1; S.lair[L]=r.LAIR1; S.ll[L]=r.LL1; S.nd[L]=r.ND1;
+  if(S.fix) S.fix[L]=P.F0*(1+levers[2]);
+  if(S.llaj) S.llaj[L]=r.LL1;
+  co.w=Object.assign({},w0,{wacc:r.WACC1,kd:w0.kd+levers[3]});
+  co.scen={name:scenName,txt:lvTxt(levers,c)};
+  SCO={key,co}; return co;
+}
+function scenBanner(co){
+  if(!co.scen) return '';
+  return `<div class="scenbar" role="status"><div><b>Cenário ${esc(co.scen.name.toLowerCase())} ativo</b><span>${esc(co.scen.txt)}. Os números desta tela já refletem o cenário.</span></div><button class="btn ghost" data-scen="Base">Voltar ao base</button></div>`;
 }
 function counter(c,A){
   const V=A.V, w=wacc(c), s=c.s, P=simBase(c), out=[];
@@ -798,12 +825,12 @@ function vPeer(){
 }
 
 /* ---------- company screens ---------- */
-function priceLabel(c){
+function priceLabel(c){if(c.scen) return "Preço implícito no cenário "+esc(c.scen.name.toLowerCase());
   if(c.src) return c.src.live?'Preço da ação · brapi.dev':'Preço da ação · informado';
   if(c.live) return `Preço da ação · ao vivo${c.live.changePct!=null?` <b>${spct(c.live.changePct/100,2)}</b> no dia`:''}`;
   return 'Preço da ação · 22/10/2026';
 }
-function priceSource(c){
+function priceSource(c){if(c.scen) return "Simulação da Cascata: "+esc(c.scen.txt)+". Preço calculado mantendo o múltiplo do cenário.";
   if(c.src&&c.src.cvm) return `Fonte: DRE e balanço da CVM (DFP, atualizada em ${c.src.cvm.split('-').reverse().join('/')}); preço ${c.src.live?'da brapi.dev (atraso de ~30 min)':'informado na importação'}. Concorrentes escolhidos automaticamente; demais premissas padrão.`;
   if(c.src) return 'Fonte: dados informados na importação.';
   if(c.live){const t=c.live.time?new Date(c.live.time):null;const h=t&&!isNaN(t)?t.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
@@ -841,7 +868,7 @@ function sCascata(c,A,V){
   <div class="grid">
    <div class="card full"><div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:6px"><h2 style="margin:0"><span class="dot"></span>E se…?</h2>
     <div class="seg" role="group" aria-label="Cenário">${['Base',...(sc?['Otimista','Estresse']:[])].map(n=>`<button data-scen="${n}" aria-pressed="${scenName===n}">${n}</button>`).join('')}${scenName==='Personalizado'?'<button aria-pressed="true">Personalizado</button>':''}</div></div>
-    <p class="src" style="margin-bottom:8px">${sc&&sc.why[scenName]?esc(sc.why[scenName]):'Base: últimos 12 meses até jun/26. Ajuste as premissas abaixo para criar seu cenário.'}</p>
+    <p class="src" style="margin-bottom:8px">${sc&&sc.why[scenName]?esc(sc.why[scenName]):(c.builtin?'Base: últimos 12 meses até jun/26.':'Base: último balanço anual entregue à CVM.')+' Ajuste as premissas abaixo: Painel, Análises e Comitê passam a mostrar o cenário.'}</p>
     <div class="rows">
      ${step(0,'Receita',r.R1,b.R1,mi,r.gR)}${conn(isN(r.GAO)?'GAO × '+nf(r.GAO,2):'GAO')}
      ${step(1,'EBIT',r.EBIT1,b.EBIT1,mi,r.gE)}${conn(isN(r.GAF)?'GAF × '+nf(r.GAF,2):'GAF')}
@@ -971,9 +998,9 @@ function sComite(c,A,V){
   </div>`;
 }
 function vCo(){
-  const c=COS[cur],A=archetype(c),V=A.V;
+  const base=COS[cur], c=screen==='cascata'?base:scenCo(base), A=archetype(c), V=A.V;
   const titles={painel:'Painel',cascata:'Cascata',analises:'Análises',comite:'Modo Comitê'};
-  return topbar(esc(c.name),`${esc(c.ticker)} · ${esc(c.sector)} · ${titles[screen]}`)+({painel:sPainel,cascata:sCascata,analises:sAnalises,comite:sComite}[screen])(c,A,V);
+  return topbar(esc(c.name),`${esc(c.ticker)} · ${esc(c.sector)} · ${titles[screen]}`)+(screen==='cascata'?'':scenBanner(c))+({painel:sPainel,cascata:sCascata,analises:sAnalises,comite:sComite}[screen])(c,A,V);
 }
 function vNova(){
   const t=Object.assign({},TEMPLATE); if(pending&&pending.peer){t.nome=pending.peer.name;t.ticker=pending.peer.ticker;t.setor=pending.peer.sector;t._comentario='Substitua os números de exemplo pelos da '+pending.peer.name+' (DFP/ITR ou release). Valores em R$ milhões.';}
