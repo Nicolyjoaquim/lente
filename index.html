@@ -200,7 +200,7 @@ textarea{width:100%;min-height:320px;font-family:ui-monospace,Menlo,Consolas,mon
 .newco>div{background:var(--card);border-radius:var(--r);padding:18px;box-shadow:var(--shadow);min-width:0}
 .newco h1{font-size:24px;font-weight:800;margin:4px 0 8px}
 .rules{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px;color:var(--ink-2);font-size:14px}
-footer{color:var(--muted);font-size:12px;padding-block:8px 0}
+footer{color:var(--muted);font-size:12px;padding-block:8px 100px}
 .sub{font-size:13px;font-weight:800;letter-spacing:.02em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px}
 .sowhat{background:var(--p-soft);border-radius:16px;padding:14px 16px;margin-top:14px}
 .sowhat b{font-size:13px;color:var(--p-ink);text-transform:uppercase;letter-spacing:.02em}
@@ -721,10 +721,10 @@ function vHome(){
    <div class="quick">${As.map(([c])=>`<button data-open="${c.ticker}">${esc(c.name)}</button>`).join('')}<button data-go="nova">+ Outra empresa</button></div></div>
   <div class="grid">
    <div class="card"><h2><span class="dot"></span>Análises completas</h2><p class="src" style="margin:-4px 0 6px">${As.length} análises completas montadas à mão${extra.length?` e ${extra.length} ${extra.length===1?'empresa aberta':'empresas abertas'} com os dados da CVM`:''}. Qualquer outra empresa da bolsa abre pela busca, com balanços da CVM e preço ao vivo.</p><div class="rows cases">${[...As,...extra.map(c=>[c,archetype(c)])].map(([c,A])=>`<div class="rowi" data-open="${c.ticker}" role="button" tabindex="0"><div class="tile">${iris(A,46,false)}</div><div><div class="t">${esc(c.name)} <span class="muted" style="font-weight:600;font-size:12.5px">${esc(c.ticker)}</span></div><div class="s" style="color:${ACOL[A.cls]};font-weight:700">${esc(A.label)}</div></div><div class="v">${brl(c.m.px)}<small class="muted">EV/EBITDA ${xx(archetype(c).V.evebitda,1)}</small></div></div>`).join('')}</div></div>
-   <div class="card"><h2><span class="dot"></span>Como a Lente lê uma empresa</h2>
-    <div class="rows">${[['Cinco análises conectadas','Alavancagem, DuPont, custos, valuation e mercado, cada uma com o seu "e daí?"'],['Cascata de um choque','Vendas, custos, Selic, dívida e múltiplo até o preço da ação'],['Arquétipo explicável','Seis testes com o número que disparou cada um'],['Modo Comitê','Fundamentos, riscos da tese e pontos de monitoramento']].map(([t,s],i)=>rowi(TILE[i],t,s,'','','',String(i+1))).join('')}</div></div>
+   <div class="card"><h2><span class="dot"></span>Como a Lente funciona</h2>
+    <div class="rows">${[['Você escolhe a empresa','Os balanços chegam sozinhos da CVM e o preço da ação vem ao vivo da bolsa'],['A IA escolhe os concorrentes','2 ou 3 empresas parecidas, cada uma com o motivo, para comparar o preço'],['A Lente faz as contas','Endividamento, rentabilidade, custos e se a ação está cara ou barata, cada número explicado'],['Você testa cenários','E se as vendas caírem ou os juros subirem? Veja o efeito no lucro e no preço'],['Sai uma conclusão','Tipo de empresa, riscos, o que acompanhar e a indicação do modelo: compra, neutro ou venda']].map(([t,s],i)=>rowi(TILE[i],t,s,'','','',String(i+1))).join('')}</div></div>
   </div>
-  <footer>Projeto acadêmico de Finanças Corporativas (ESPM). Dados até 22/10/2026; valores em R$ milhões; LTM = 12 meses até jun/26. Não é recomendação de investimento.</footer>`;
+  <footer>Projeto acadêmico de Finanças Corporativas (ESPM). Balanços da CVM atualizados toda semana e preços da brapi.dev com atraso de ~30 min. WEG, Localiza e Hapvida usam uma base montada à mão (LTM = 12 meses até jun/26). Valores em R$ milhões. Não é recomendação de investimento.</footer>`;
 }
 function vPeer(){
   const p=pending.peer,o=pending.of;
