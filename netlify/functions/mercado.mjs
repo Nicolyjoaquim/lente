@@ -2,32 +2,43 @@
 // 1) busca notícias recentes da empresa na GNews; 2) envia notícias + números da CVM + concorrentes ao Gemini;
 // 3) devolve um JSON com título, leitura para a tese, descrição dos concorrentes, linha do tempo,
 //    tendências, oportunidades, ameaças e vantagens competitivas.
+// Com ?modo=pares, escolhe com IA os 2 ou 3 concorrentes diretos da empresa entre as empresas da bolsa.
 // As chaves ficam nas variáveis de ambiente GEMINI_API_KEY e GNEWS_API_KEY (painel do Netlify).
 
 const TICKER = /^[A-Z]{4}\d{1,2}$/;
-const MODELOS = (process.env.GEMINI_MODEL || "gemini-flash-latest,gemini-flash-lite-latest,gemini-2.5-flash")
+// modelos mais rápidos primeiro: o Netlify encerra a função depois de ~30 s
+const MODELOS = (process.env.GEMINI_MODEL || "gemini-flash-lite-latest,gemini-2.5-flash-lite,gemini-flash-latest")
   .split(",").map((s) => s.trim()).filter(Boolean);
 
+const ORCAMENTO_MS = 24000;
+
 export default async (req) => {
+  const t0 = Date.now();
   const url = new URL(req.url);
   const tk = (url.searchParams.get("ticker") || "").toUpperCase();
   const pares = (url.searchParams.get("pares") || "").toUpperCase().split(",").filter((t) => TICKER.test(t)).slice(0, 8);
   if (!TICKER.test(tk)) return json({ error: "ticker inválido" }, 400);
   const gkey = process.env.GEMINI_API_KEY, nkey = process.env.GNEWS_API_KEY;
   if (!gkey || !nkey) return json({ error: "Configure GEMINI_API_KEY e GNEWS_API_KEY no Netlify" }, 500);
+  if (url.searchParams.get("modo") === "pares") return escolherPares(url, tk, gkey, t0);
 
   // dados da própria empresa e dos pares (arquivos gerados pelo robô da CVM, publicados no mesmo site)
   const ler = async (t) => {
-    try { const r = await fetch(`${url.origin}/data/cvm/${t}.json`); return r.ok ? await r.json() : null; } catch { return null; }
+    try { const r = await fetch(`${url.origin}/data/cvm/${t}.json`, { signal: AbortSignal.timeout(5000) }); return r.ok ? await r.json() : null; } catch { return null; }
   };
-  const d = await ler(tk);
-  if (!d) return json({ error: "empresa sem dados da CVM" }, 404);
-  const dp = (await Promise.all(pares.map(ler))).map((x, i) => x && { ticker: pares[i], nome: x.nome, setor: x.setor }).filter(Boolean);
-
   // nome curto de mercado enviado pela Lente (ex.: "Petrobras"), que acha mais notícias que a razão social
   const nomeQ = (url.searchParams.get("nome") || "").replace(/[^\p{L}\p{N} .&'-]/gu, "").trim().slice(0, 60);
+  // dados da empresa, dos pares e notícias, tudo em paralelo
+  const [d, brutos, noticiasQ] = await Promise.all([
+    ler(tk),
+    Promise.all(pares.map(ler)),
+    nomeQ ? buscarNoticias(nomeQ, nkey) : Promise.resolve(null),
+  ]);
+  if (!d) return json({ error: "empresa sem dados da CVM" }, 404);
+  const dp = brutos.map((x, i) => x && { ticker: pares[i], nome: x.nome, setor: x.setor }).filter(Boolean);
   const nome = nomeQ || limparNome(d.nome);
-  const noticias = await buscarNoticias(nome, nkey);
+  const noticias = noticiasQ || (await buscarNoticias(nome, nkey));
+  const tDados = Date.now() - t0;
 
   const L = d.anos.length - 1;
   const fin = {
@@ -60,26 +71,8 @@ REGRAS:
 Responda apenas com JSON neste formato:
 {"titulo":"","e_dai":"","concorrentes":[{"ticker":"","descricao":""}],"noticias":[{"id":0,"resumo":""}],"tendencias":[""],"oportunidades":[""],"ameacas":[""],"vantagens":[""]}`;
 
-  let ia = null, modeloUsado = null, ultimoErro = "";
-  for (const m of MODELOS) {
-    try {
-      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-goog-api-key": gkey },
-        body: JSON.stringify({
-          contents: [{ role: "user", parts: [{ text: prompt }] }],
-          generationConfig: { responseMimeType: "application/json", temperature: 0.3 },
-        }),
-      });
-      if (!r.ok) { ultimoErro = `${m}: ${r.status}`; continue; }
-      const out = await r.json();
-      const txt = out?.candidates?.[0]?.content?.parts?.map((p) => p.text || "").join("") || "";
-      ia = JSON.parse(txt.replace(/^```(json)?|```$/g, "").trim());
-      modeloUsado = m;
-      break;
-    } catch (e) { ultimoErro = `${m}: ${e.message}`; }
-  }
-  if (!ia) return json({ error: "Não consegui gerar o capítulo agora", detalhe: ultimoErro }, 502);
+  const { ia, modeloUsado, ultimoErro } = await gemini(prompt, gkey, t0);
+  if (!ia) return json({ error: "Não consegui gerar o capítulo agora", detalhe: ultimoErro, ms_dados: tDados, ms_total: Date.now() - t0 }, 502);
 
   const arr = (x, n) => (Array.isArray(x) ? x.filter((v) => typeof v === "string" && v.trim()).slice(0, n) : []);
   const linha = (ia.noticias || [])
@@ -103,8 +96,74 @@ Responda apenas com JSON neste formato:
     ameacas: arr(ia.ameacas, 3),
     vantagens: arr(ia.vantagens, 4),
     n_noticias: noticias.length,
+    ms: Date.now() - t0,
   }, 200, true);
 };
+
+// Chama o Gemini tentando os modelos em ordem, dentro do orçamento de tempo.
+async function gemini(prompt, gkey, t0, maxTokens = 2000) {
+  let ia = null, modeloUsado = null, ultimoErro = "";
+  for (const m of MODELOS) {
+    const resta = ORCAMENTO_MS - (Date.now() - t0);
+    if (resta < 3000) { ultimoErro += " | sem tempo para outro modelo"; break; }
+    try {
+      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`, {
+        signal: AbortSignal.timeout(resta),
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": gkey },
+        body: JSON.stringify({
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+          generationConfig: { responseMimeType: "application/json", temperature: 0.2, maxOutputTokens: maxTokens },
+        }),
+      });
+      if (!r.ok) { ultimoErro += ` | ${m}: ${r.status} ${(await r.text()).slice(0, 120)}`; continue; }
+      const out = await r.json();
+      const txt = out?.candidates?.[0]?.content?.parts?.map((p) => p.text || "").join("") || "";
+      ia = JSON.parse(txt.replace(/^```(json)?|```$/g, "").trim());
+      modeloUsado = m;
+      break;
+    } catch (e) { ultimoErro += ` | ${m}: ${e.name === "TimeoutError" ? "demorou demais" : e.message}`; }
+  }
+  return { ia, modeloUsado, ultimoErro };
+}
+
+// Escolhe de 1 a 3 concorrentes DIRETOS (mesmo negócio principal), como faria um analista do setor.
+// A IA só pode escolher entre as empresas listadas na bolsa que têm dados da CVM na Lente.
+async function escolherPares(url, tk, gkey, t0) {
+  let idx;
+  try { idx = await (await fetch(`${url.origin}/data/cvm/index.json`, { signal: AbortSignal.timeout(5000) })).json(); }
+  catch { return json({ error: "índice da CVM indisponível" }, 502); }
+  const emp = idx.empresas || [];
+  const me = emp.find((e) => e.t === tk);
+  if (!me) return json({ error: "empresa sem dados da CVM" }, 404);
+  const nomeQ = (url.searchParams.get("nome") || "").replace(/[^\p{L}\p{N} .&'-]/gu, "").trim().slice(0, 60);
+  const nome = nomeQ || limparNome(me.n);
+  const chave = (e) => e.c || e.n;
+  const vistos = new Set([chave(me)]), lista = [];
+  for (const e of emp) {
+    if (vistos.has(chave(e))) continue;
+    vistos.add(chave(e));
+    lista.push(e);
+  }
+  const prompt = `Você é analista de research de ações no Brasil. Escolha os concorrentes diretos de ${nome} (${tk}, ${me.n}, setor CVM "${me.s}") para uma comparação de múltiplos, como faria um analista que cobre o setor.
+
+Critérios: mesmo negócio principal, mesmos clientes ou produtos, e comparáveis usados pelo mercado. Exemplos: Sabesp → Copasa e Sanepar; Magazine Luiza → Casas Bahia; Renner → C&A e Guararapes; Petrobras → PRIO e Brava; Localiza → Movida.
+Não escolha empresas de outro negócio só porque estão no mesmo setor amplo (ex.: elétricas não são concorrentes de saneamento). Não escolha holdings ou controladas do mesmo grupo.
+Escolha no máximo 3, de preferência 2, ordenados do mais comparável para o menos. Se não houver nenhum concorrente direto na lista, devolva lista vazia.
+
+Empresas disponíveis (ticker: nome | setor):
+${lista.map((e) => `${e.t}: ${e.n} | ${e.s}`).join("\n")}
+
+Responda apenas com JSON: {"pares":[{"ticker":"","motivo":"até 12 palavras: por que é concorrente direto"}]}`;
+  const { ia, modeloUsado, ultimoErro } = await gemini(prompt, gkey, t0, 400);
+  if (!ia) return json({ error: "Não consegui escolher os concorrentes agora", detalhe: ultimoErro }, 502);
+  const validos = new Map(lista.map((e) => [e.t, e]));
+  const pares = (ia.pares || [])
+    .map((p) => ({ t: String(p.ticker || "").toUpperCase().trim(), motivo: String(p.motivo || "").slice(0, 140) }))
+    .filter((p) => validos.has(p.t))
+    .slice(0, 3);
+  return json({ ticker: tk, modelo: modeloUsado, pares, ms: Date.now() - t0 }, 200, true, 2592000);
+}
 
 function limparNome(n) {
   return String(n || "")
@@ -117,7 +176,7 @@ function limparNome(n) {
 async function buscarNoticias(nome, key) {
   try {
     const q = encodeURIComponent(`"${nome}"`);
-    const r = await fetch(`https://gnews.io/api/v4/search?q=${q}&lang=pt&country=br&max=10&sortby=publishedAt&apikey=${key}`);
+    const r = await fetch(`https://gnews.io/api/v4/search?q=${q}&lang=pt&country=br&max=10&sortby=publishedAt&apikey=${key}`, { signal: AbortSignal.timeout(6000) });
     if (!r.ok) return [];
     const d = await r.json();
     return (d.articles || []).map((a) => ({
@@ -131,12 +190,12 @@ async function buscarNoticias(nome, key) {
   } catch { return []; }
 }
 
-function json(body, status = 200, cache = false) {
+function json(body, status = 200, cache = false, segundos = 604800) {
   const headers = { "Content-Type": "application/json; charset=utf-8" };
   if (cache) {
-    // Guarda o capítulo por 7 dias no CDN do Netlify: economiza cota do Gemini e da GNews.
-    headers["Netlify-CDN-Cache-Control"] = "public, durable, s-maxage=604800, stale-while-revalidate=86400";
-    headers["Netlify-Vary"] = "query=ticker|pares|nome";
+    // Guarda no CDN do Netlify (capítulo: 7 dias; concorrentes: 30 dias) para economizar cota do Gemini e da GNews.
+    headers["Netlify-CDN-Cache-Control"] = `public, durable, s-maxage=${segundos}, stale-while-revalidate=86400`;
+    headers["Netlify-Vary"] = "query=ticker|pares|nome|modo";
   } else {
     headers["Cache-Control"] = "no-store";
     headers["Netlify-CDN-Cache-Control"] = "no-store";
