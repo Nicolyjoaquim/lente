@@ -780,7 +780,7 @@ async function gerarMercado(c){
   MERC_ST[c.code]='loading';
   const pares=(c.peerList||[]).map(r=>r.t);
   try{
-    const r=await fetch(`/.netlify/functions/mercado?ticker=${encodeURIComponent(c.ticker)}&pares=${pares.join(',')}&nome=${encodeURIComponent(c.name)}`);
+    const r=await fetch(`/api/mercado?ticker=${encodeURIComponent(c.ticker)}&pares=${pares.join(',')}&nome=${encodeURIComponent(c.name)}`);
     const d=await r.json(); if(!r.ok||d.error) throw new Error(d.error||('HTTP '+r.status));
     const A=archetype(c),V=A.V,s=c.s,L=s.rev.length-1, prev=s.rev[L-1];
     const pos=[['Crescimento da receita',prev?spct(s.rev[L]/prev-1,1):'–',`${c.years[L]} contra ${c.years[L-1]}`],
@@ -864,7 +864,7 @@ function sAnalises(c,A,V){
     const st=MERC_ST[c.code]||'loading';
     out+=anCard(4,'Mercado e estratégia',st==='fail'?'Não consegui gerar este capítulo agora':'Gerando o capítulo com IA…','',st==='fail'
       ?`<p class="lead">${esc(MERC_ERR[c.code]||'O serviço de IA não respondeu.')} </p><button class="btn ghost" data-retry-merc="${esc(c.code)}">Tentar de novo</button>`
-      :'<p class="lead">Buscando notícias recentes da empresa e escrevendo posicionamento, concorrentes, tendências, oportunidades, ameaças e vantagens competitivas. Leva de 10 a 30 segundos.</p>','','');
+      :'<p class="lead">Buscando notícias recentes da empresa e escrevendo posicionamento, concorrentes, tendências, oportunidades, ameaças e vantagens competitivas. Leva até 1 minuto.</p>','','');
   } else out+=anCard(4,'Mercado e estratégia','O contexto que explica os números','','<p class="lead">Para empresas carregadas pelo modelo, o analista completa este capítulo: posicionamento, concorrentes, tendências, notícias, oportunidades, ameaças e vantagens competitivas.</p>','','');
   return out+'</div>';
 }
@@ -890,9 +890,9 @@ function vNova(){
   const cvm=pending&&pending.cvm;
   return `<section class="newco"><div><div class="kicker">${cvm?esc(pending.peer.ticker)+' · dados da CVM':pending&&pending.peer?esc(pending.peer.ticker)+' · ainda sem base':'Nova empresa'}</div>
    <h1>${cvm?'Base da '+esc(pending.peer.name)+' carregada da CVM':pending&&pending.peer?'Carregue a base da '+esc(pending.peer.name):'Analise qualquer empresa com a mesma régua'}</h1>
-   <p style="color:var(--ink-2);max-width:56ch">${cvm?'DRE e balanço vieram automaticamente das demonstrações financeiras (DFP) que a empresa entrega à CVM, o preço vem ao vivo da brapi.dev e os concorrentes são escolhidos pelo setor e pelo valor de mercado. Confira e clique em Analisar.':'Cole DRE, balanço e mercado no formato padrão (o mesmo das DFPs da CVM). A Lente recalcula as cinco análises, a íris, a cascata e o comitê. Os números abaixo são de exemplo.'}</p>
+   <p style="color:var(--ink-2);max-width:56ch">${cvm?'DRE e balanço vieram automaticamente das demonstrações financeiras (DFP) que a empresa entrega à CVM, o preço vem ao vivo da brapi.dev e os concorrentes diretos são escolhidos por IA. Confira e clique em Analisar.':'Cole DRE, balanço e mercado no formato padrão (o mesmo das DFPs da CVM). A Lente recalcula as cinco análises, a íris, a cascata e o comitê. Os números abaixo são de exemplo.'}</p>
    ${bank?'<p class="err">Bancos não usam EBITDA nem EV/EBITDA: a Lente vai marcar esses indicadores como não aplicáveis.</p>':''}
-   ${cvm?'<div id="peerbox" class="card" style="background:var(--tint);box-shadow:none;margin:14px 0"><p class="src">Escolhendo os concorrentes diretos com IA… (até 30 segundos)</p></div>':''}
+   ${cvm?'<div id="peerbox" class="card" style="background:var(--tint);box-shadow:none;margin:14px 0"><p class="src">Escolhendo os concorrentes diretos com IA… (até 1 minuto)</p></div>':''}
    <label for="json" class="kicker">Dados da empresa</label>
    <textarea id="json" spellcheck="false">${cvm?'Carregando os dados da CVM…':esc(JSON.stringify(t,null,1))}</textarea>
    <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;align-items:center"><button class="btn" id="go">Analisar</button><button class="btn ghost" id="copy">Copiar modelo</button><span id="msg" class="err" role="status"></span></div></div>
@@ -910,7 +910,7 @@ async function prefillCVM(){
     const r=await fetch('data/cvm/'+tk+'.json'); if(!r.ok) throw new Error();
     const d=await r.json();
     let preco=null;
-    try{const q=await (await fetch('/.netlify/functions/cotacao?tickers='+tk)).json();const x=q.quotes&&q.quotes[tk];if(x&&typeof x.price==='number')preco=x.price;}catch(e){}
+    try{const q=await (await fetch('/api/cotacao?tickers='+tk)).json();const x=q.quotes&&q.quotes[tk];if(x&&typeof x.price==='number')preco=x.price;}catch(e){}
     const P=await peersCVM(tk).catch(()=>null);
     const j={
       _comentario:`Balanços: ${d._fonte}, atualizado em ${d._atualizado.split('-').reverse().join('/')}. Preço: ${preco?'brapi.dev, ao vivo':'não encontrado, preencha'}. ${P?`Pares escolhidos automaticamente por ${P.crit}: mediana de ${P.n} ${P.n===1?'empresa':'empresas'}${P.n<3?' (poucos pares: confira)':''}. Troque se quiser outros concorrentes.`:'Preencha "ev_ebitda_pares" com o múltiplo dos concorrentes.'} Confira as premissas (régua, beta, alíquota).`+(d._avisos.length?' Atenção: '+d._avisos.join(' '):''),
@@ -1014,7 +1014,7 @@ let CVMIDX=[];
 let MKT=null;
 async function mercado(){
   if(MKT) return MKT;
-  try{const r=await fetch('/.netlify/functions/cotacao?lista=1'); const d=await r.json(); MKT=(d.lista||[]).filter(x=>x.t&&x.s&&x.mc>0);}catch(e){MKT=[];}
+  try{const r=await fetch('/api/cotacao?lista=1'); const d=await r.json(); MKT=(d.lista||[]).filter(x=>x.t&&x.s&&x.mc>0);}catch(e){MKT=[];}
   return MKT;
 }
 async function peersCVM(tk){
@@ -1027,7 +1027,7 @@ async function peersCVM(tk){
   const M=await mercado(), mm=M.find(x=>x.t===tk);
   // 1º: concorrentes DIRETOS escolhidos por IA (2 ou 3, como um analista do setor faria)
   try{
-    const r=await fetch(`/.netlify/functions/mercado?modo=pares&ticker=${tk}&nome=${encodeURIComponent(pending&&pending.peer?pending.peer.name:me.n)}`,{signal:AbortSignal.timeout(28000)});
+    const r=await fetch(`/api/mercado?modo=pares&ticker=${tk}&nome=${encodeURIComponent(pending&&pending.peer?pending.peer.name:me.n)}`,{signal:AbortSignal.timeout(55000)});
     const d=await r.json();
     if(r.ok&&d.pares&&d.pares.length){
       d.pares.forEach(p=>motivos[p.t]=p.motivo);
@@ -1053,7 +1053,7 @@ async function peersCVM(tk){
   const files=await Promise.all(cand.map(e=>fetch('data/cvm/'+e.t+'.json').then(r=>r.ok?r.json():null).catch(()=>null)));
   let prices={};
   const semMC=cand.filter(e=>!e.mc).map(e=>e.t);
-  if(semMC.length){try{prices=(await (await fetch('/.netlify/functions/cotacao?tickers='+semMC.join(','))).json()).quotes||{};}catch(e){}}
+  if(semMC.length){try{prices=(await (await fetch('/api/cotacao?tickers='+semMC.join(','))).json()).quotes||{};}catch(e){}}
   const rows=[];
   cand.forEach((e,i)=>{const d=files[i]; if(!d) return;
     const mcap=e.mc?e.mc/1e6:(prices[e.t]&&d.acoes_mi?prices[e.t].price*d.acoes_mi:null); if(!mcap) return;
@@ -1105,7 +1105,7 @@ const isComplete=q=>COS.filter(c=>c.builtin).every(c=>q&&q[c.ticker]&&typeof q[c
     if(s&&Date.now()-s.at<TTL&&isComplete(s.quotes)){applyQuotes(s.quotes);LIVE={status:'ok'};keep(()=>render());return;}}catch(e){}
   try{
     const tk=COS.filter(c=>c.builtin).map(c=>c.ticker).join(',');
-    const r=await fetch('/.netlify/functions/cotacao?tickers='+tk);
+    const r=await fetch('/api/cotacao?tickers='+tk);
     if(!r.ok)throw new Error('HTTP '+r.status);
     const d=await r.json();
     if(!applyQuotes(d.quotes))throw new Error('sem cotações');
