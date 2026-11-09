@@ -1064,6 +1064,11 @@ async function peersCVM(tk){
     crit=`setor "${me.g}" da CVM e receita parecida`;
   }
   if(aiErr&&crit) crit+=` (a escolha por IA não respondeu: ${aiErr})`;
+  // units (ex.: SAPR11 = 1 ON + 4 PN) têm preço de um pacote de ações: preço × total de ações exagera o valor de mercado.
+  // Para o cálculo, troca a unit pela ação PN ou ON da mesma empresa.
+  cand=cand.map(e=>{if(!/11$/.test(e.t)) return e; const c=byT[e.t]; if(!c) return e;
+    const irm=CVMIDX.filter(x=>x.c&&x.c===c.c&&x.t!==e.t).map(x=>x.t).sort((a,b)=>(/4$/.test(b)?1:0)-(/4$/.test(a)?1:0))[0];
+    if(!irm) return e; if(motivos[e.t]) motivos[irm]=motivos[e.t]; return M.find(x=>x.t===irm)||{t:irm};});
   if(!cand.length) return null;
   const files=await Promise.all(cand.map(e=>fetch('data/cvm/'+e.t+'.json').then(r=>r.ok?r.json():null).catch(()=>null)));
   let prices={};
