@@ -156,12 +156,12 @@ async function escolherPares(url, tk, gkey, t0) {
 
 Critérios: mesmo negócio principal, mesmos clientes ou produtos, e comparáveis usados pelo mercado. Exemplos: Sabesp → Copasa e Sanepar; Magazine Luiza → Casas Bahia; Renner → C&A e Guararapes; Petrobras → PRIO e Brava; Localiza → Movida.
 Não escolha empresas de outro negócio só porque estão no mesmo setor amplo (ex.: elétricas não são concorrentes de saneamento). Não escolha holdings ou controladas do mesmo grupo.
-Escolha no máximo 3, de preferência 2, ordenados do mais comparável para o menos. Se não houver nenhum concorrente direto na lista, devolva lista vazia.
+Escolha no máximo 3, de preferência 2, ordenados do mais comparável para o menos. Se não houver nenhum concorrente direto listado (ex.: Ambev, única grande cervejaria da bolsa), escolha as 2 empresas com modelo de negócio mais parecido (ex.: bens de consumo de marca, mesma cadeia) e marque "sem_concorrente_direto": true.
 
 Empresas disponíveis (ticker: nome | setor):
 ${lista.map((e) => `${e.t}: ${e.n} | ${e.s}`).join("\n")}
 
-Responda apenas com JSON: {"pares":[{"ticker":"","motivo":"até 12 palavras: por que é concorrente direto"}]}`;
+Responda apenas com JSON: {"sem_concorrente_direto":false,"pares":[{"ticker":"","motivo":"até 12 palavras: por que é comparável"}]}`;
   const validos = new Map(lista.map((e) => [e.t, e]));
   const extrair = (ia) => {
     const arr = Array.isArray(ia) ? ia : (ia && (ia.pares || ia.concorrentes || ia.peers)) || [];
@@ -175,7 +175,8 @@ Responda apenas com JSON: {"pares":[{"ticker":"","motivo":"até 12 palavras: por
   const { ia, modeloUsado, ultimoErro, bruto } = await gemini(prompt, gkey, t0, 4000, (x) => extrair(x).length > 0, MODELOS_PARES);
   if (!ia) return json({ error: "Não consegui escolher os concorrentes agora", detalhe: ultimoErro, bruto }, 502);
   const pares = extrair(ia);
-  return json({ ticker: tk, modelo: modeloUsado, pares, ms: Date.now() - t0 }, 200, true, 2592000);
+  const semDireto = !Array.isArray(ia) && ia && ia.sem_concorrente_direto === true;
+  return json({ ticker: tk, modelo: modeloUsado, pares, sem_direto: semDireto, ms: Date.now() - t0 }, 200, true, 2592000);
 }
 
 function limparNome(n) {
