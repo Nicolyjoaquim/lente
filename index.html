@@ -63,6 +63,9 @@ main{padding-block:12px 120px}
 /* hero card */
 .hero{background:linear-gradient(140deg,var(--p1),var(--p2));color:var(--on-p);border-radius:26px;padding:22px;position:relative;overflow:hidden;box-shadow:0 14px 30px rgba(90,63,214,.28)}
 .hero::after{content:"";position:absolute;width:210px;height:210px;border-radius:50%;right:-60px;top:-70px;background:rgba(255,255,255,.12)}
+.hero.home{overflow:visible;z-index:5}
+.hero.home::after{right:0;top:0;width:170px;height:170px;border-radius:0 26px 0 100%}
+.hero.home:has(.sugg:not([hidden])) .quick{visibility:hidden}
 .hero::before{content:"";position:absolute;width:120px;height:120px;border-radius:50%;right:40px;top:60px;background:rgba(255,255,255,.07)}
 .hero>*{position:relative;z-index:1}
 .hero .lbl{font-size:13.5px;opacity:.85;font-weight:500}
@@ -691,11 +694,11 @@ function vHome(){
   const As=COS.filter(c=>c.builtin).map(c=>[c,archetype(c)]);
   const extra=COS.filter(c=>!c.builtin);
   return `<div class="top"><div class="hello"><h1>Olá 👋</h1><p>Que empresa vamos analisar hoje?</p></div></div>
-  <div class="hero"><div class="lbl">Lente · research de empresas da B3</div><div class="big" style="font-size:clamp(26px,5.5vw,38px);margin-bottom:14px">Os números dizem o quê.<br>A Lente diz por quê.</div>
+  <div class="hero home"><div class="lbl">Lente · research de empresas da B3</div><div class="big" style="font-size:clamp(26px,5.5vw,38px);margin-bottom:14px">Os números dizem o quê.<br>A Lente diz por quê.</div>
    <div class="search">${searchHTML('q','Busque por nome ou ticker')}</div>
    <div class="quick">${As.map(([c])=>`<button data-open="${c.ticker}">${esc(c.name)}</button>`).join('')}<button data-go="nova">+ Outra empresa</button></div></div>
   <div class="grid">
-   <div class="card"><h2><span class="dot"></span>Análises completas</h2><p class="src" style="margin:-4px 0 6px">${As.length} empresas com análise completa e dados de fonte primária. Movida e Rede D'Or entram como comparáveis; os demais tickers da busca ainda não têm base carregada.</p><div class="rows cases">${[...As,...extra.map(c=>[c,archetype(c)])].map(([c,A])=>`<div class="rowi" data-open="${c.ticker}" role="button" tabindex="0"><div class="tile">${iris(A,46,false)}</div><div><div class="t">${esc(c.name)} <span class="muted" style="font-weight:600;font-size:12.5px">${esc(c.ticker)}</span></div><div class="s" style="color:${ACOL[A.cls]};font-weight:700">${esc(A.label)}</div></div><div class="v">${brl(c.m.px)}<small class="muted">EV/EBITDA ${xx(archetype(c).V.evebitda,1)}</small></div></div>`).join('')}</div></div>
+   <div class="card"><h2><span class="dot"></span>Análises completas</h2><p class="src" style="margin:-4px 0 6px">${As.length} análises completas montadas à mão${extra.length?` e ${extra.length} ${extra.length===1?'empresa aberta':'empresas abertas'} com os dados da CVM`:''}. Qualquer outra empresa da bolsa abre pela busca, com balanços da CVM e preço ao vivo.</p><div class="rows cases">${[...As,...extra.map(c=>[c,archetype(c)])].map(([c,A])=>`<div class="rowi" data-open="${c.ticker}" role="button" tabindex="0"><div class="tile">${iris(A,46,false)}</div><div><div class="t">${esc(c.name)} <span class="muted" style="font-weight:600;font-size:12.5px">${esc(c.ticker)}</span></div><div class="s" style="color:${ACOL[A.cls]};font-weight:700">${esc(A.label)}</div></div><div class="v">${brl(c.m.px)}<small class="muted">EV/EBITDA ${xx(archetype(c).V.evebitda,1)}</small></div></div>`).join('')}</div></div>
    <div class="card"><h2><span class="dot"></span>Como a Lente lê uma empresa</h2>
     <div class="rows">${[['Cinco análises conectadas','Alavancagem, DuPont, custos, valuation e mercado, cada uma com o seu "e daí?"'],['Cascata de um choque','Vendas, custos, Selic, dívida e múltiplo até o preço da ação'],['Arquétipo explicável','Seis testes com o número que disparou cada um'],['Modo Comitê','Fundamentos, riscos da tese e pontos de monitoramento']].map(([t,s],i)=>rowi(TILE[i],t,s,'','','',String(i+1))).join('')}</div></div>
   </div>
@@ -1114,7 +1117,7 @@ async function peersCVM(tk){
 
 /* ---------- cotações ao vivo: API brapi.dev via Netlify Function (token fica no servidor) ---------- */
 let LIVE={status:'loading'};
-const MAX_DIVERGE=0.25; // acima de 25% de diferença para a base, o preço vai para conferência em vez de recalcular tudo
+const MAX_DIVERGE=2; // só descarta o preço ao vivo se ele for absurdo (mais que o triplo ou menos de um terço da base)
 function applyQuotes(q){
   let n=0;
   COS.forEach(c=>{if(!c.builtin)return;const x=q&&q[c.ticker];
@@ -1122,7 +1125,7 @@ function applyQuotes(q){
     c.m.px=c.m.px0;c.live=null;c.diverge=null;
     if(!(x&&typeof x.price==='number'&&x.price>0))return;
     n++;
-    if(Math.abs(x.price/c.m.px0-1)>MAX_DIVERGE){c.diverge={price:x.price,base:c.m.px0};return;}
+    if(Math.abs(Math.log(x.price/c.m.px0))>Math.log(1+MAX_DIVERGE)){c.diverge={price:x.price,base:c.m.px0};return;}
     c.m.px=x.price;c.live=x;});
   return n;
 }
