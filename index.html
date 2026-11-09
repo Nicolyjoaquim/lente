@@ -1043,7 +1043,7 @@ async function peersCVM(tk){
     if(r.ok&&d.pares&&d.pares.length){
       d.pares.forEach(p=>motivos[p.t]=p.motivo);
       cand=d.pares.map(p=>M.find(x=>x.t===p.t)||{t:p.t}).filter(e=>byT[e.t]);
-      crit='concorrentes diretos escolhidos por IA entre as empresas da bolsa'; aiErr='';
+      crit=d.sem_direto?'a empresa não tem concorrente direto listado na B3; a IA escolheu as de modelo de negócio mais parecido (compare com cuidado)':'concorrentes diretos escolhidos por IA entre as empresas da bolsa'; aiErr='';
     } else aiErr=(d.error||('erro '+r.status))+(d.detalhe?' — '+d.detalhe:'');
   }catch(e){aiErr=e.name==='TimeoutError'?'demorou demais':'sem conexão';}
   }
