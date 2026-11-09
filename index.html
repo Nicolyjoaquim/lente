@@ -892,7 +892,7 @@ function vNova(){
   const bank=pending&&pending.peer&&/Banco|Serviços financeiros/.test(pending.peer.sector);
   const cvm=pending&&pending.cvm;
   return `<section class="newco"><div><div class="kicker">${cvm?esc(pending.peer.ticker)+' · dados da CVM':pending&&pending.peer?esc(pending.peer.ticker)+' · ainda sem base':'Nova empresa'}</div>
-   <h1>${cvm?'Base da '+esc(pending.peer.name)+' carregada da CVM':pending&&pending.peer?'Carregue a base da '+esc(pending.peer.name):'Analise qualquer empresa listada na B3 com a mesma régua'}</h1>
+   <h1>${cvm?'Base da '+esc(pending.peer.name)+' carregada da CVM':pending&&pending.peer?'Carregue a base da '+esc(pending.peer.name):'Analise empresas não financeiras da B3 com a mesma régua'}</h1>
    <p style="color:var(--ink-2);max-width:56ch">${cvm?'DRE e balanço vieram automaticamente das demonstrações financeiras (DFP) que a empresa entrega à CVM, o preço vem ao vivo da brapi.dev e os concorrentes diretos são escolhidos por IA. Confira e clique em Analisar.':'Cole DRE, balanço e mercado no formato padrão (o mesmo das DFPs da CVM). A Lente recalcula as cinco análises, a íris, a cascata e o comitê. Os números abaixo são de exemplo.'}</p>
    ${bank?'<p class="err">Bancos não usam EBITDA nem EV/EBITDA: a Lente vai marcar esses indicadores como não aplicáveis.</p>':''}
    ${cvm?'<div id="peerbox" class="card" style="background:var(--tint);box-shadow:none;margin:14px 0"><p class="src">Escolhendo os concorrentes diretos com IA… (até 1 minuto)</p></div>':''}
@@ -974,7 +974,7 @@ function render(){
   if(view==='home') app.innerHTML=vHome();
   else if(view==='co') app.innerHTML=vCo();
   else if(view==='peer') app.innerHTML=vPeer();
-  else app.innerHTML=topbar('Nova empresa','Analise qualquer empresa listada na B3 com a mesma régua')+vNova();
+  else app.innerHTML=topbar('Nova empresa','Analise empresas não financeiras da B3 com a mesma régua')+vNova();
   renderNav();
   if(document.getElementById('q')) bindSearch('q');
   if(document.getElementById('tq')) bindSearch('tq');
