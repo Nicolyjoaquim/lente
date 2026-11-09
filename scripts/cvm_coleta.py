@@ -129,10 +129,20 @@ def nao_controladores(bpp):
 
 
 def lucro_controladores(dre):
+    total = conta(dre, "3.11") if conta(dre, "3.11") is not None else conta(dre, "3.09")
+    ctrl = nctrl = None
     for cod, (ds, v) in dre.items():
-        if cod.startswith("3.11.") and "controladora" in norm(ds):
-            return v
-    return conta(dre, "3.11") if conta(dre, "3.11") is not None else conta(dre, "3.09")
+        if cod.startswith("3.11."):
+            if "nao controlador" in norm(ds):
+                nctrl = v
+            elif "controladora" in norm(ds):
+                ctrl = v
+    # algumas empresas (ex.: Sabesp) preenchem a linha "controladora" com zero; aí usa o total menos os minoritários
+    if ctrl and (total is None or abs(ctrl) <= abs(total) * 1.5 + 1):
+        return ctrl
+    if total is not None:
+        return total - (nctrl or 0)
+    return ctrl
 
 
 def eh_financeira(dre):
