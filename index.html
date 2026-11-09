@@ -1019,36 +1019,51 @@ async function mercado(){
 }
 async function peersCVM(tk){
   const me=CVMIDX.find(e=>e.t===tk); if(!me) return null;
-  const w1=n=>norm(n).replace(/^(cia|companhia|grupo)\s+/,'').split(/\s+/)[0];
+  const GEN=new Set(['cia','companhia','grupo','saneamento','energia','gas','centrais','concessionaria','banco','transmissao','distribuidora','industrias','empreendimentos','eletricas','de','do','da']);
+  const w1=n=>norm(n).replace(/[^a-z\s]/g,' ').split(/\s+/).filter(w=>w&&!GEN.has(w))[0]||'';
   const byT=Object.fromEntries(CVMIDX.map(e=>[e.t,e]));
   const key=c=>c.c||c.n; // empresa (código CVM; nome se o índice for antigo)
   const pick=list=>{const seen=new Set([key(me)]),out=[];list.forEach(e=>{const c=byT[e.t];if(c&&!seen.has(key(c))&&w1(c.n)!==w1(me.n)&&out.length<8){seen.add(key(c));out.push(e);}});return out;};
-  let cand=[], crit='', motivos={};
+  let cand=[], crit='', motivos={}, aiErr='';
   const M=await mercado(), mm=M.find(x=>x.t===tk);
   // 1º: concorrentes DIRETOS escolhidos por IA (2 ou 3, como um analista do setor faria)
   try{
-    const r=await fetch(`/api/mercado?modo=pares&ticker=${tk}&nome=${encodeURIComponent(pending&&pending.peer?pending.peer.name:me.n)}`,{signal:AbortSignal.timeout(55000)});
-    const d=await r.json();
+    const r=await fetch(`/api/mercado?modo=pares&v=2&ticker=${tk}&nome=${encodeURIComponent(pending&&pending.peer?pending.peer.name:me.n)}`,{signal:AbortSignal.timeout(55000)});
+    const d=await r.json().catch(()=>({error:'resposta inválida ('+r.status+')'}));
     if(r.ok&&d.pares&&d.pares.length){
       d.pares.forEach(p=>motivos[p.t]=p.motivo);
       cand=d.pares.map(p=>M.find(x=>x.t===p.t)||{t:p.t}).filter(e=>byT[e.t]);
       crit='concorrentes diretos escolhidos por IA entre as empresas da bolsa';
-    }
-  }catch(e){}
-  if(!cand.length&&mm){
-    // pontuação: diferença de porte (valor de mercado) + 1 ponto se o setor de mercado for outro + 1 se o setor da CVM for outro.
-    // Só entram empresas que coincidem em pelo menos um dos dois setores.
-    const gk=g=>norm((g||'').replace(/^Emp\. Adm\. Part\. - /,'')).replace(/[^a-z\s]/g,' ').split(/\s+/).filter(Boolean).map(w=>w.slice(0,3)).join(' ');
-    const myG=gk(me.g||me.s);
+    } else aiErr=d.error||d.detalhe||('erro '+r.status);
+  }catch(e){aiErr=e.name==='TimeoutError'?'demorou demais':'sem conexão';}
+  const gk=g=>norm((g||'').replace(/^Emp\. Adm\. Part\. - /,'')).replace(/[^a-z\s]/g,' ').split(/\s+/).filter(Boolean).map(w=>w.slice(0,3)).join(' ');
+  const myG=gk(me.g||me.s);
+  // 2º (reserva): mesmo setor da CVM (ex.: "Saneamento") e porte parecido. Setor de mercado sozinho é amplo demais ("Utilities" mistura água e energia).
+  if(!cand.length&&myG){
+    const mcOf=e=>{const x=M.find(y=>y.t===e.t);return x?x.mc:null;};
+    const base=mm?mm.mc:null;
+    const same=CVMIDX.filter(e=>e.t!==tk&&gk(e.g||e.s)===myG);
+    // nomes que dividem uma palavra de atividade (ex.: "Saneamento") ficam na frente: separa água de gás dentro do mesmo setor
+    const STOP=new Set(['brasil','brasileira','brasileiro','participacoes','holding','industria','industrias','comercio','servicos','companhia','estado','paulo','janeiro','minas','gerais','parana','grande','nacional','distrib','distribuidora']);
+    const pal=n=>new Set(norm(n).replace(/[^a-z\s]/g,' ').split(/\s+/).filter(w=>w.length>=6&&!STOP.has(w)));
+    const minhas=pal(me.n), bonus=e=>[...pal(e.n)].some(w=>minhas.has(w))?-3:0;
+    const dist=e=>{const m=mcOf(e);let d=(base&&m)?Math.abs(Math.log(m/base)):(me.r&&e.r?Math.abs(Math.log(e.r/me.r))+0.5:9);return d+bonus(e);};
+    let ord=pick(same.sort((a,b)=>dist(a)-dist(b)));
+    const afins=ord.filter(e=>bonus(e)<0); if(afins.length>=2) ord=afins.slice(0,2); // padrão WEG: 2 concorrentes bem diretos
+    cand=ord.slice(0,3).map(e=>M.find(x=>x.t===e.t)||{t:e.t});
+    if(cand.length) crit=`mesmo setor da CVM ("${me.g||me.s}") e porte parecido`;
+  }
+  if(cand.length<2&&mm){
     const sc=x=>{const c=byT[x.t]; if(!c) return null; const ds=x.s!==mm.s, dg=myG?gk(c.g||c.s)!==myG:true; if(ds&&dg) return null;
       return Math.abs(Math.log(x.mc/mm.mc))+(ds?1:0)+(dg?1:0);};
-    cand=pick(M.filter(x=>x.t!==tk&&sc(x)!=null).sort((a,b)=>sc(a)-sc(b))).slice(0,3);
-    crit=`setor de mercado ("${mm.s}"), setor da CVM e valor de mercado parecido`;
+    const extra=pick(M.filter(x=>x.t!==tk&&sc(x)!=null).sort((a,b)=>sc(a)-sc(b))).filter(e=>!cand.some(c=>c.t===e.t));
+    if(cand.length+extra.length) {cand=cand.concat(extra).slice(0,cand.length?2:3); if(!crit) crit=`setor de mercado ("${mm.s}"), setor da CVM e valor de mercado parecido`;}
   }
   if(cand.length<2&&me.r){
     cand=pick(CVMIDX.filter(e=>e.g===me.g&&e.r>0).sort((a,b)=>Math.abs(Math.log(a.r/me.r))-Math.abs(Math.log(b.r/me.r)))).slice(0,3);
     crit=`setor "${me.g}" da CVM e receita parecida`;
   }
+  if(aiErr&&crit) crit+=` (a escolha por IA não respondeu: ${aiErr})`;
   if(!cand.length) return null;
   const files=await Promise.all(cand.map(e=>fetch('data/cvm/'+e.t+'.json').then(r=>r.ok?r.json():null).catch(()=>null)));
   let prices={};
