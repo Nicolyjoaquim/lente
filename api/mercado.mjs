@@ -11,6 +11,8 @@ const MODELOS = (process.env.GEMINI_MODEL || "gemini-flash-lite-latest,gemini-2.
   .split(",").map((s) => s.trim()).filter(Boolean);
 
 const ORCAMENTO_MS = 45000;
+// para escolher concorrentes vale mais a qualidade do que a velocidade (a resposta é curta e fica guardada 30 dias)
+const MODELOS_PARES = ["gemini-2.5-flash", "gemini-flash-latest", "gemini-flash-lite-latest"];
 
 export const maxDuration = 60;
 
@@ -103,9 +105,9 @@ Responda apenas com JSON neste formato:
 }
 
 // Chama o Gemini tentando os modelos em ordem, dentro do orçamento de tempo.
-async function gemini(prompt, gkey, t0, maxTokens = 2000) {
-  let ia = null, modeloUsado = null, ultimoErro = "";
-  for (const m of MODELOS) {
+async function gemini(prompt, gkey, t0, maxTokens = 2000, aceitar = () => true, modelos = MODELOS) {
+  let ia = null, modeloUsado = null, ultimoErro = "", bruto = "";
+  for (const m of modelos) {
     const resta = ORCAMENTO_MS - (Date.now() - t0);
     if (resta < 3000) { ultimoErro += " | sem tempo para outro modelo"; break; }
     try {
@@ -121,12 +123,15 @@ async function gemini(prompt, gkey, t0, maxTokens = 2000) {
       if (!r.ok) { ultimoErro += ` | ${m}: ${r.status} ${(await r.text()).slice(0, 120)}`; continue; }
       const out = await r.json();
       const txt = out?.candidates?.[0]?.content?.parts?.map((p) => p.text || "").join("") || "";
-      ia = JSON.parse(txt.replace(/^```(json)?|```$/g, "").trim());
+      bruto = txt.slice(0, 300);
+      const x = JSON.parse(txt.replace(/^```(json)?|```$/g, "").trim());
+      if (!aceitar(x)) { ultimoErro += ` | ${m}: resposta sem concorrentes válidos`; continue; }
+      ia = x;
       modeloUsado = m;
       break;
     } catch (e) { ultimoErro += ` | ${m}: ${e.name === "TimeoutError" ? "demorou demais" : e.message}`; }
   }
-  return { ia, modeloUsado, ultimoErro };
+  return { ia, modeloUsado, ultimoErro, bruto };
 }
 
 // Escolhe de 1 a 3 concorrentes DIRETOS (mesmo negócio principal), como faria um analista do setor.
@@ -157,13 +162,19 @@ Empresas disponíveis (ticker: nome | setor):
 ${lista.map((e) => `${e.t}: ${e.n} | ${e.s}`).join("\n")}
 
 Responda apenas com JSON: {"pares":[{"ticker":"","motivo":"até 12 palavras: por que é concorrente direto"}]}`;
-  const { ia, modeloUsado, ultimoErro } = await gemini(prompt, gkey, t0, 400);
-  if (!ia) return json({ error: "Não consegui escolher os concorrentes agora", detalhe: ultimoErro }, 502);
   const validos = new Map(lista.map((e) => [e.t, e]));
-  const pares = (ia.pares || [])
-    .map((p) => ({ t: String(p.ticker || "").toUpperCase().trim(), motivo: String(p.motivo || "").slice(0, 140) }))
-    .filter((p) => validos.has(p.t))
-    .slice(0, 3);
+  const extrair = (ia) => {
+    const arr = Array.isArray(ia) ? ia : (ia && (ia.pares || ia.concorrentes || ia.peers)) || [];
+    return arr
+      .map((p) => (typeof p === "string" ? { ticker: p } : p || {}))
+      .map((p) => ({ t: String(p.ticker || p.t || p.codigo || "").toUpperCase().replace(/\.SA$/, "").trim(), motivo: String(p.motivo || p.razao || "").slice(0, 140) }))
+      .filter((p) => validos.has(p.t) && p.t !== tk)
+      .slice(0, 3);
+  };
+  // se um modelo devolver lista vazia ou tickers que não existem, tenta o próximo
+  const { ia, modeloUsado, ultimoErro, bruto } = await gemini(prompt, gkey, t0, 4000, (x) => extrair(x).length > 0, MODELOS_PARES);
+  if (!ia) return json({ error: "Não consegui escolher os concorrentes agora", detalhe: ultimoErro, bruto }, 502);
+  const pares = extrair(ia);
   return json({ ticker: tk, modelo: modeloUsado, pares, ms: Date.now() - t0 }, 200, true, 2592000);
 }
 
