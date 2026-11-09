@@ -714,7 +714,7 @@ function priceLabel(c){
   return 'Preço da ação · 22/10/2026';
 }
 function priceSource(c){
-  if(c.src&&c.src.cvm) return `Fonte: DRE e balanço da CVM (DFP consolidada, atualizada em ${c.src.cvm.split('-').reverse().join('/')}); preço ${c.src.live?'da brapi.dev (atraso de ~30 min)':'informado na importação'}. Concorrentes escolhidos automaticamente; demais premissas padrão.`;
+  if(c.src&&c.src.cvm) return `Fonte: DRE e balanço da CVM (DFP, atualizada em ${c.src.cvm.split('-').reverse().join('/')}); preço ${c.src.live?'da brapi.dev (atraso de ~30 min)':'informado na importação'}. Concorrentes escolhidos automaticamente; demais premissas padrão.`;
   if(c.src) return 'Fonte: dados informados na importação.';
   if(c.live){const t=c.live.time?new Date(c.live.time):null;const h=t&&!isNaN(t)?t.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
     return `Fonte: API brapi.dev${h?' · cotação de '+h:''} (atraso de ~30 min). Todos os múltiplos e cenários usam este preço.`;}
@@ -815,11 +815,12 @@ function sAnalises(c,A,V){
   const curto=n=>{const w=n.replace(/\s*\(.*$/,'').replace(/\s+S\.?A\.?$/i,'').split(/\s+/).filter(x=>!/^(empreendimentos|grupo|participa[çc][õo]es|cia|companhia|holding|de|da|do)$/i.test(x));let o=w.slice(0,2).join(' ');return o.length>14?w[0].slice(0,14):o;};
   const peersV=c.peerList?[{name:c.name,evebitda:V.evebitda},...c.peerList.map(r=>({name:curto(r.n),evebitda:r.m}))].filter(p=>isN(p.evebitda)):peers;
   const me=isN(H[4].roe)?H[4]:H[L];const facs=[['ml','margem'],['giro','giro do ativo'],['mult','alavancagem']];
-  let drv='';if(peers.length>1){const ps=peers.slice(1);const res=facs.map(([k,l])=>({l,r:me[k]/median(ps.map(q=>q[k]))}));drv=res.reduce((a,b)=>b.r>a.r?b:a).l;}
+  const peersD=c.peerList?[{name:c.name,ml:me.ml,giro:me.giro,mult:me.mult,roe:me.roe},...c.peerList.filter(r=>isN(r.roe)&&isN(r.mult)).map(r=>({name:curto(r.n),ml:r.ml,giro:r.giro,mult:r.mult,roe:r.roe}))]:peers;
+  let drv='';if(peersD.length>1){const ps=peersD.slice(1);const res=facs.map(([k,l])=>({l,r:me[k]/median(ps.map(q=>q[k]))}));drv=res.reduce((a,b)=>b.r>a.r?b:a).l;}
   const jump=isN(H[4].mult)&&isN(H[3].mult)&&H[4].mult-H[3].mult>0.3;
   out+=anCard(1,'DuPont',c.code==='HAPV3'?'ROE perto de zero, sobre um patrimônio que é quase todo ágio':`ROE de ${pct(me.roe,0)}, puxado ${drv?'por '+drv:'pela operação'}${jump?' (e por um salto no multiplicador)':''}`,
    mini('Margem líquida',pct(me.ml),'lucro ÷ receita')+mini('Giro do ativo',xx(me.giro,2),'receita ÷ ativo')+mini('Multiplicador',xx(me.mult,2),'ativo ÷ PL',jump),
-   peers.length>1?`<div class="grid" style="margin-top:0"><div><p class="src" style="margin-bottom:4px">ROE</p>${barChart(peers.map(p=>({label:p.name,value:p.roe,hl:p.name===c.name})),v=>pct(v,0),'ROE')}</div><div><p class="src" style="margin-bottom:4px">Ativo ÷ PL</p>${barChart(peers.map(p=>({label:p.name,value:p.mult,hl:p.name===c.name})),v=>xx(v,1),'Multiplicador')}</div></div>`:'',
+   peersD.length>1?`<div class="grid" style="margin-top:0"><div><p class="src" style="margin-bottom:4px">ROE</p>${barChart(peersD.map(p=>({label:p.name,value:p.roe,hl:p.name===c.name})),v=>pct(v,0),'ROE')}</div><div><p class="src" style="margin-bottom:4px">Ativo ÷ PL</p>${barChart(peersD.map(p=>({label:p.name,value:p.mult,hl:p.name===c.name})),v=>xx(v,1),'Multiplicador')}</div></div>`:'',
    `<div class="tw"><table>${thead}<tbody>${trow('Margem líquida','ml',v=>pct(v))}${trow('Giro do ativo','giro',v=>xx(v,2))}${trow('Multiplicador','mult',v=>xx(v,2))}${trow('ROE','roe',v=>pct(v),1)}${H.some(o=>o.roeaj!=null)?trow('ROE com lucro ajustado','roeaj',v=>pct(v)):''}${trow('Carga tributária','ctrib',v=>xx(v,2))}${trow('Carga de juros','cjur',v=>xx(v,2))}${trow('Margem EBIT','mebit',v=>pct(v))}</tbody></table></div>${jump?`<p class="src">O multiplicador saltou de ${xx(H[3].mult,2)} para ${xx(H[4].mult,2)}: o ROE subiu pelo balanço, não pela operação.</p>`:''}`,
    calc('ROE','ROE = margem × giro × multiplicador',`= ${pct(me.ml)} × ${nf(me.giro,2)} × ${nf(me.mult,2)} = ${pct(me.roe)}`));
   /* 3 */
@@ -891,7 +892,7 @@ function vNova(){
    <h1>${cvm?'Base da '+esc(pending.peer.name)+' carregada da CVM':pending&&pending.peer?'Carregue a base da '+esc(pending.peer.name):'Analise qualquer empresa com a mesma régua'}</h1>
    <p style="color:var(--ink-2);max-width:56ch">${cvm?'DRE e balanço vieram automaticamente das demonstrações financeiras (DFP) que a empresa entrega à CVM, o preço vem ao vivo da brapi.dev e os concorrentes são escolhidos pelo setor e pelo valor de mercado. Confira e clique em Analisar.':'Cole DRE, balanço e mercado no formato padrão (o mesmo das DFPs da CVM). A Lente recalcula as cinco análises, a íris, a cascata e o comitê. Os números abaixo são de exemplo.'}</p>
    ${bank?'<p class="err">Bancos não usam EBITDA nem EV/EBITDA: a Lente vai marcar esses indicadores como não aplicáveis.</p>':''}
-   ${cvm?'<div id="peerbox" class="card" style="background:var(--tint);box-shadow:none;margin:14px 0"><p class="src">Escolhendo os concorrentes…</p></div>':''}
+   ${cvm?'<div id="peerbox" class="card" style="background:var(--tint);box-shadow:none;margin:14px 0"><p class="src">Escolhendo os concorrentes diretos com IA… (até 30 segundos)</p></div>':''}
    <label for="json" class="kicker">Dados da empresa</label>
    <textarea id="json" spellcheck="false">${cvm?'Carregando os dados da CVM…':esc(JSON.stringify(t,null,1))}</textarea>
    <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;align-items:center"><button class="btn" id="go">Analisar</button><button class="btn ghost" id="copy">Copiar modelo</button><span id="msg" class="err" role="status"></span></div></div>
@@ -900,7 +901,7 @@ function vNova(){
 }
 function peersHTML(L,med,crit){
   return `<h2 style="font-size:16px;margin-bottom:6px"><span class="dot"></span>Concorrentes escolhidos automaticamente</h2>
-   <div class="rows">${L.map((r,i)=>rowi(TILE[(i+2)%6],esc(r.n),esc(r.t),xx(r.m,1),'EV/EBITDA','',esc(r.n.replace(/[^A-Za-zÀ-ú ]/g,'').split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase()))).join('')}</div>
+   <div class="rows">${L.map((r,i)=>rowi(TILE[(i+2)%6],esc(r.n),esc(r.t)+(r.d?' · '+esc(r.d):''),xx(r.m,1),'EV/EBITDA','',esc(r.n.replace(/[^A-Za-zÀ-ú ]/g,'').split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase()))).join('')}</div>
    <p class="src" style="margin-top:8px">Mediana usada na comparação: <b style="color:var(--ink)">${xx(med,1)}</b>. Critério: ${esc(crit)}. Para trocar, edite "ev_ebitda_pares" e "nome_pares" na caixa abaixo.</p>`;
 }
 async function prefillCVM(){
@@ -1022,20 +1023,30 @@ async function peersCVM(tk){
   const byT=Object.fromEntries(CVMIDX.map(e=>[e.t,e]));
   const key=c=>c.c||c.n; // empresa (código CVM; nome se o índice for antigo)
   const pick=list=>{const seen=new Set([key(me)]),out=[];list.forEach(e=>{const c=byT[e.t];if(c&&!seen.has(key(c))&&w1(c.n)!==w1(me.n)&&out.length<8){seen.add(key(c));out.push(e);}});return out;};
-  let cand=[], crit='';
+  let cand=[], crit='', motivos={};
   const M=await mercado(), mm=M.find(x=>x.t===tk);
-  if(mm){
+  // 1º: concorrentes DIRETOS escolhidos por IA (2 ou 3, como um analista do setor faria)
+  try{
+    const r=await fetch(`/.netlify/functions/mercado?modo=pares&ticker=${tk}&nome=${encodeURIComponent(pending&&pending.peer?pending.peer.name:me.n)}`,{signal:AbortSignal.timeout(28000)});
+    const d=await r.json();
+    if(r.ok&&d.pares&&d.pares.length){
+      d.pares.forEach(p=>motivos[p.t]=p.motivo);
+      cand=d.pares.map(p=>M.find(x=>x.t===p.t)||{t:p.t}).filter(e=>byT[e.t]);
+      crit='concorrentes diretos escolhidos por IA entre as empresas da bolsa';
+    }
+  }catch(e){}
+  if(!cand.length&&mm){
     // pontuação: diferença de porte (valor de mercado) + 1 ponto se o setor de mercado for outro + 1 se o setor da CVM for outro.
     // Só entram empresas que coincidem em pelo menos um dos dois setores.
     const gk=g=>norm((g||'').replace(/^Emp\. Adm\. Part\. - /,'')).replace(/[^a-z\s]/g,' ').split(/\s+/).filter(Boolean).map(w=>w.slice(0,3)).join(' ');
     const myG=gk(me.g||me.s);
     const sc=x=>{const c=byT[x.t]; if(!c) return null; const ds=x.s!==mm.s, dg=myG?gk(c.g||c.s)!==myG:true; if(ds&&dg) return null;
       return Math.abs(Math.log(x.mc/mm.mc))+(ds?1:0)+(dg?1:0);};
-    cand=pick(M.filter(x=>x.t!==tk&&sc(x)!=null).sort((a,b)=>sc(a)-sc(b)));
+    cand=pick(M.filter(x=>x.t!==tk&&sc(x)!=null).sort((a,b)=>sc(a)-sc(b))).slice(0,3);
     crit=`setor de mercado ("${mm.s}"), setor da CVM e valor de mercado parecido`;
   }
   if(cand.length<2&&me.r){
-    cand=pick(CVMIDX.filter(e=>e.g===me.g&&e.r>0).sort((a,b)=>Math.abs(Math.log(a.r/me.r))-Math.abs(Math.log(b.r/me.r))));
+    cand=pick(CVMIDX.filter(e=>e.g===me.g&&e.r>0).sort((a,b)=>Math.abs(Math.log(a.r/me.r))-Math.abs(Math.log(b.r/me.r)))).slice(0,3);
     crit=`setor "${me.g}" da CVM e receita parecida`;
   }
   if(!cand.length) return null;
@@ -1049,12 +1060,14 @@ async function peersCVM(tk){
     const L=d.anos.length-1, ebit=d.ebit[L], ebitda=ebit+(d.da[L]||0), ev=mcap+(d.divida_liquida[L]||0)+(d.minoritarios||0);
     if(!(ebitda>0)||!(ev>0)) return;
     const m=ev/ebitda; if(m>40) return; // múltiplo distorcido por EBITDA muito baixo
-    rows.push({t:e.t,n:byT[e.t].n,evebitda:m,evebit:ebit>0?ev/ebit:null});});
+    const pl=d.pl[L],at=d.ativo_total[L],ll=d.lucro_liquido[L],rev=d.receita[L];
+    rows.push({t:e.t,n:byT[e.t].n,evebitda:m,evebit:ebit>0?ev/ebit:null,d:motivos[e.t]||'',
+      ml:rev?ll/rev:null,giro:at?rev/at:null,mult:pl>0?at/pl:null,roe:pl>0?ll/pl:null});});
   if(!rows.length) return null;
   const nice=r=>(DIR.find(k=>k.ticker===r.t)?.name||r.n).replace(/\s+-\s+Em Recupera.*$/i,' (em RJ)').replace(/\s+S\.?A\.?$/i,'');
   return {evebitda:median(rows.map(r=>r.evebitda)),evebit:rows.some(r=>r.evebit)?median(rows.filter(r=>r.evebit).map(r=>r.evebit)):null,
     nomes:rows.slice(0,5).map(r=>nice(r)+' ('+r.t+')'),n:rows.length,crit,
-    lista:rows.map(r=>({n:nice(r),t:r.t,m:+r.evebitda.toFixed(2)}))};
+    lista:rows.map(r=>({n:nice(r),t:r.t,m:+r.evebitda.toFixed(2),d:r.d,ml:r.ml,giro:r.giro,mult:r.mult,roe:r.roe}))};
 }
 /* ---------- diretório da CVM: empresas com balanços carregados automaticamente pelo robô semanal ---------- */
 (async()=>{
