@@ -167,6 +167,7 @@ td.na{font-size:11.5px;color:var(--p-ink);font-weight:600}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
 
 /* comitê */
+.sinal{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:14px}.sinal .pill{font-size:15px}.sinal small{opacity:.9;font-size:12.5px;max-width:70ch}
 .vote{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 .vote button{border:0;background:rgba(255,255,255,.18);color:#fff;border-radius:12px;padding:9px 14px;font-weight:700;font-size:13.5px}
 .vote button b{margin-left:6px}
@@ -363,7 +364,7 @@ function archetype(c){
   else if(isN(V.spread)&&V.spread<-3){label='Destruição de valor';cls='trap';sub='retorno abaixo do custo de capital';}
   else {label='Sem tese definida';cls='neutral';sub='sem tese clara pelos números';}
   add('Múltiplo ÷ pares', rel!=null&&(rel<=0.6||rel>=1.2), xx(rel,2), rel<=0.6?'desconto forte':rel>=1.2?'prêmio forte':'em linha');
-  add('ROIC − WACC', isN(V.spread)&&V.spread>=5, pp(V.spread), isN(V.spread)&&V.spread>=5?'cria muito valor':isN(V.spread)&&V.spread<-3?'destrói valor':'perto do custo de capital');
+  add('ROIC − WACC', isN(V.spread)&&(V.spread>=5||V.spread<-3), pp(V.spread), isN(V.spread)&&V.spread>=5?'cria muito valor':isN(V.spread)&&V.spread<-3?'destrói valor':'perto do custo de capital');
   add('Dívida líq. ÷ EBITDA', isN(nde)&&nde>reg, isN(nde)?xx(nde,2):'–', 'régua do setor: '+xx(reg,1));
   add('GAF estrutural', isN(gafe)&&gafe>=2, isN(gafe)?xx(gafe,2):'n/i', isN(gafe)?(gafe>=2?'juros amplificam o lucro':'juros pesam pouco'):'juros maiores que o EBIT');
   add('Crescimento implícito', isN(V.gimp)&&V.gimp>=G.glim, isN(V.gimp)?pct(V.gimp):'n/a', 'limiar: '+pct(G.glim));
@@ -553,7 +554,28 @@ function thesisLine(c,A){
   if(A.label==='Qualidade a preço justo') return `Retorno muito acima do custo de capital e balanço leve, com múltiplo em linha com os pares.`;
   if(A.label.startsWith('Retorno dependente')) return `Os juros consomem ${pct(1-(A.H[L].cjur||0),0)} do EBIT e amplificam qualquer choque (GAT estrutural ${xx(A.H[L].gate,1)}). A dívida rende mais do que custa (ROIC − Kd ${pp(V.kds)}), mas o retorno total mal cobre o custo de capital (${pp(V.spread)}).`;
   if(A.label.startsWith('Desconto')) return `Desconto de ${pct(-V.prem,0)} no EV/EBITDA contra ${c.peerName}, mas ${A.sig} de 3 sinais de armadilha. No EV/EBIT o desconto some (${xx(V.evebit,1)} contra ${xx(c.peerEvebit,1)}).`;
-  return `Sem tese clara pelos números.`;
+  const cob=A.H[L]&&A.H[L].cob;
+  if(A.label==='Destruição de valor') return `O ROIC de ${pct(V.roic)} fica abaixo do custo de capital de ${pct(V.wacc)} (${pp(V.spread)}): cada real investido rende menos do que custa.${isN(cob)&&cob<1?` O EBIT nem cobre os juros (cobertura de ${xx(cob,2)}).`:''} Com múltiplo de ${xx(V.evebitda,1)} contra ${xx(c.peer,1)} dos pares, o preço ${A.rel<0.85?'já desconta parte do problema':'não dá desconto pelo risco'}.`;
+  if(A.label==='Recuperação em curso') return `A margem EBITDA subiu ${nf(A.dmg,1)} p.p. em cinco anos e o múltiplo (${xx(V.evebitda,1)}) segue ${pct(1-A.rel,0)} abaixo dos pares: a melhora ainda não está no preço.`;
+  if(A.label==='Exceção') return `EBITDA ou patrimônio negativo: múltiplos e ROE perdem o sentido. A análise começa pela capacidade de pagar a dívida e voltar a lucrar.`;
+  return `Nenhum sinal forte: múltiplo ${A.rel!=null?(A.rel<0.85?'abaixo':A.rel>1.2?'acima':'em linha com'):'sem comparação com'} os pares (${xx(V.evebitda,1)} contra ${xx(c.peer,1)}), retorno ${isN(V.spread)?(V.spread>=0?'pouco acima':'pouco abaixo'):'sem cálculo'} do custo de capital (${pp(V.spread)}) e dívida ${isN(A.H[L].nde)&&A.H[L].nde>c.m.regua?'acima':'dentro'} da régua do setor.`;
+}
+
+/* indicação do modelo: soma de pontos das regras (não é recomendação de investimento) */
+function sinal(c,A){
+  const V=A.V,H=A.H[L],P=[],N=[];
+  if(A.label==='Exceção') return {k:'Sem indicação',cls:'neutral',pros:[],contras:['EBITDA ou PL negativo: as regras não se aplicam.']};
+  if(A.rel!=null&&A.rel<0.85) P.push(`Múltiplo ${pct(1-A.rel,0)} abaixo dos pares`);
+  if(A.rel!=null&&A.rel>1.2) N.push(`Múltiplo ${pct(A.rel-1,0)} acima dos pares`);
+  if(isN(V.spread)&&V.spread>=2) P.push(`ROIC ${nf(Math.abs(V.spread),1)} p.p. acima do custo de capital`);
+  if(isN(V.spread)&&V.spread<-3) N.push(`ROIC ${nf(Math.abs(V.spread),1)} p.p. abaixo do custo de capital`);
+  if(isN(V.gimp)&&V.gimp>=G.glim) N.push(`Preço embute crescimento perpétuo de ${pct(V.gimp)}`);
+  if(isN(H.nde)&&H.nde>c.m.regua*1.5) N.push(`Dívida de ${xx(H.nde,1)} o EBITDA, bem acima da régua`);
+  if(isN(H.cob)&&H.cob<1) N.push(`EBIT não cobre os juros (${xx(H.cob,2)})`);
+  if(A.sig>=2) N.push(`${A.sig} de 3 sinais de armadilha`,'');
+  if(isN(A.dmg)&&A.dmg>2) P.push(`Margem EBITDA ${nf(A.dmg,1)} p.p. maior que há cinco anos`);
+  const sc=P.length-N.length, contras=N.filter(Boolean);
+  return sc>=2?{k:'Compra',cls:'champ',pros:P,contras}:sc<=-2?{k:'Venda',cls:'trap',pros:P,contras}:{k:'Neutro',cls:'neutral',pros:P,contras};
 }
 
 /* ---------- directory for search ---------- */
@@ -872,8 +894,9 @@ function sAnalises(c,A,V){
   return out+'</div>';
 }
 function sComite(c,A,V){
-  const [rc,txt]=reco(c,A),F=riskFlags(c,A),cf=counter(c,A),v=tally(c.ticker),mv=myVote(c.ticker),nv=v.a+v.r+v.m;
+  const S=sinal(c,A),[rc,txt]=reco(c,A),F=riskFlags(c,A),cf=counter(c,A),v=tally(c.ticker),mv=myVote(c.ticker),nv=v.a+v.r+v.m;
   return `<div class="hero"><div class="lbl">Leitura para o comitê · gerada pelas regras · não é recomendação de investimento</div><div class="big" style="font-size:clamp(28px,6vw,40px)">${esc(rc)}</div><p style="margin:0;opacity:.92;max-width:70ch">${esc(txt)}</p>
+   <div class="sinal"><span class="pill"><i style="background:${ACOL[S.cls]}"></i>Indicação do modelo: ${esc(S.k)}</span><small>${S.pros.length||S.contras.length?esc([...S.pros.map(x=>'+ '+x),...S.contras.map(x=>'− '+x)].join(' · ')):'Nenhuma regra apontou para compra ou venda.'}</small></div>
    <div class="vote" role="group" aria-label="Voto do comitê">${[['a','Aprovar'],['r','Rejeitar'],['m','Mais dados']].map(([k,l])=>`<button data-vote="${k}" aria-pressed="${mv===k}" class="${mv===k?'on':''}">${l}<b>${v[k]}</b></button>`).join('')}<button data-vote="z">${VMODE==='shared'?'Retirar meu voto':'Zerar'}</button></div>
    <p class="vnote">${VMODE==='shared'?`Votos compartilhados: cada pessoa tem um voto por empresa, visível para todos que abrem este link. ${nv} ${nv===1?'voto':'votos'} até agora.`:'Votos salvos só neste navegador: o registro compartilhado não está disponível nesta visualização.'}${VERR?' '+esc(VERR):''}</p></div>
   <div class="grid">
