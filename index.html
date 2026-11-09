@@ -910,15 +910,21 @@ async function prefillCVM(){
     const r=await fetch('data/cvm/'+tk+'.json'); if(!r.ok) throw new Error();
     const d=await r.json();
     let preco=null;
-    try{const q=await (await fetch('/api/cotacao?tickers='+tk)).json();const x=q.quotes&&q.quotes[tk];if(x&&typeof x.price==='number')preco=x.price;}catch(e){}
+    let mcap=null;
+    try{const q=await (await fetch('/api/cotacao?tickers='+tk)).json();const x=q.quotes&&q.quotes[tk];if(x&&typeof x.price==='number'){preco=x.price;mcap=x.marketCap||null;}}catch(e){}
     const P=await peersCVM(tk).catch(()=>null);
+    if(!mcap&&MKT){const m=MKT.find(x=>x.t===tk); if(m) mcap=m.mc;}
+    // Desdobramento/grupamento depois do último balanço (ex.: Sabesp): o número de ações da DFP fica velho.
+    // Se o valor de mercado da bolsa não bate com preço × ações da CVM, usa as ações implícitas no valor de mercado.
+    let acoes=d.acoes_mi;
+    if(preco&&mcap&&acoes){const imp=mcap/preco/1e6; if(Math.abs(imp/acoes-1)>0.2){d._avisos.push(`Número de ações ajustado de ${nf(acoes,0)} mi para ${nf(imp,0)} mi pelo valor de mercado da bolsa (provável desdobramento depois do último balanço).`);acoes=+imp.toFixed(3);}}
     const j={
       _comentario:`Balanços: ${d._fonte}, atualizado em ${d._atualizado.split('-').reverse().join('/')}. Preço: ${preco?'brapi.dev, ao vivo':'não encontrado, preencha'}. ${P?`Pares escolhidos automaticamente por ${P.crit}: mediana de ${P.n} ${P.n===1?'empresa':'empresas'}${P.n<3?' (poucos pares: confira)':''}. Troque se quiser outros concorrentes.`:'Preencha "ev_ebitda_pares" com o múltiplo dos concorrentes.'} Confira as premissas (régua, beta, alíquota).`+(d._avisos.length?' Atenção: '+d._avisos.join(' '):''),
       _origem:'cvm',_atualizado:d._atualizado,_preco_ao_vivo:!!preco,
       nome:pending.peer.name||d.nome,ticker:tk,setor:d.setor,regua_divida_ebitda:2.5,beta_setor:1,spread_credito:0.015,aliquota:0.34,
       _pares_detalhe:P?P.lista:[],_pares_criterio:P?P.crit:'',
       ev_ebitda_pares:P?+P.evebitda.toFixed(2):null,nome_pares:P?P.nomes.join(', '):'pares',ev_ebit_pares:P&&P.evebit?+P.evebit.toFixed(2):null,
-      preco,acoes_mi:d.acoes_mi,minoritarios:d.minoritarios,divida_exposta_selic:null,
+      preco,acoes_mi:acoes,minoritarios:d.minoritarios,divida_exposta_selic:null,
       anos:d.anos,receita:d.receita,ebit:d.ebit,da:d.da,resultado_financeiro:d.resultado_financeiro,lucro_liquido:d.lucro_liquido,
       despesas_operacionais:d.despesas_operacionais,ativo_total:d.ativo_total,intangivel:d.intangivel,pl:d.pl,divida_liquida:d.divida_liquida
     };
@@ -1027,15 +1033,17 @@ async function peersCVM(tk){
   let cand=[], crit='', motivos={}, aiErr='';
   const M=await mercado(), mm=M.find(x=>x.t===tk);
   // 1º: concorrentes DIRETOS escolhidos por IA (2 ou 3, como um analista do setor faria)
+  for(let tent=0;tent<2&&!cand.length;tent++){ if(tent) await new Promise(r=>setTimeout(r,2000)); // a IA gratuita às vezes recusa por excesso de pedidos: tenta 2 vezes
   try{
-    const r=await fetch(`/api/mercado?modo=pares&v=2&ticker=${tk}&nome=${encodeURIComponent(pending&&pending.peer?pending.peer.name:me.n)}`,{signal:AbortSignal.timeout(55000)});
+    const r=await fetch(`/api/mercado?modo=pares&v=3&ticker=${tk}&nome=${encodeURIComponent(pending&&pending.peer?pending.peer.name:me.n)}`,{signal:AbortSignal.timeout(55000)});
     const d=await r.json().catch(()=>({error:'resposta inválida ('+r.status+')'}));
     if(r.ok&&d.pares&&d.pares.length){
       d.pares.forEach(p=>motivos[p.t]=p.motivo);
       cand=d.pares.map(p=>M.find(x=>x.t===p.t)||{t:p.t}).filter(e=>byT[e.t]);
-      crit='concorrentes diretos escolhidos por IA entre as empresas da bolsa';
-    } else aiErr=d.error||d.detalhe||('erro '+r.status);
+      crit='concorrentes diretos escolhidos por IA entre as empresas da bolsa'; aiErr='';
+    } else aiErr=(d.error||('erro '+r.status))+(d.detalhe?' — '+d.detalhe:'');
   }catch(e){aiErr=e.name==='TimeoutError'?'demorou demais':'sem conexão';}
+  }
   const gk=g=>norm((g||'').replace(/^Emp\. Adm\. Part\. - /,'')).replace(/[^a-z\s]/g,' ').split(/\s+/).filter(Boolean).map(w=>w.slice(0,3)).join(' ');
   const myG=gk(me.g||me.s);
   // 2º (reserva): mesmo setor da CVM (ex.: "Saneamento") e porte parecido. Setor de mercado sozinho é amplo demais ("Utilities" mistura água e energia).
