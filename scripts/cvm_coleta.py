@@ -240,10 +240,24 @@ def main():
     dados, nomes, cnpjs, acoes = {}, {}, {}, {}
     for a, z in zips:  # do mais novo para o mais antigo
         with zipfile.ZipFile(z) as zf:
-            dre = indexar(ler_csv(zf, f"dfp_cia_aberta_DRE_con_{a}.csv"))
-            bpa = indexar(ler_csv(zf, f"dfp_cia_aberta_BPA_con_{a}.csv"))
-            bpp = indexar(ler_csv(zf, f"dfp_cia_aberta_BPP_con_{a}.csv"))
-            dfc = indexar(ler_csv(zf, f"dfp_cia_aberta_DFC_MI_con_{a}.csv"))
+            # demonstrações consolidadas; empresas sem controladas (ex.: Sanepar) só entregam as individuais
+            def par(nome):
+                con = indexar(ler_csv(zf, f"dfp_cia_aberta_{nome}_con_{a}.csv"))
+                ind = indexar(ler_csv(zf, f"dfp_cia_aberta_{nome}_ind_{a}.csv"))
+                return con, ind
+            dre_c, dre_i = par("DRE")
+            bpa_c, bpa_i = par("BPA")
+            bpp_c, bpp_i = par("BPP")
+            dfc_c, dfc_i = par("DFC_MI")
+            dre = dict(dre_c)
+            usa_ind = set()
+            for k, v in dre_i.items():
+                if k not in dre_c or not dre_c[k]:
+                    dre[k] = v
+                    usa_ind.add(k)
+            bpa = {k: (bpa_i if k in usa_ind else bpa_c).get(k, {}) for k in dre}
+            bpp = {k: (bpp_i if k in usa_ind else bpp_c).get(k, {}) for k in dre}
+            dfc = {k: (dfc_i if k in usa_ind else dfc_c).get(k) for k in dre}
             cad = ler_csv(zf, f"dfp_cia_aberta_{a}.csv")
             cap = ler_csv(zf, f"dfp_cia_aberta_composicao_capital_{a}.csv")
         for l in cad:
@@ -307,7 +321,7 @@ def main():
             if abs(pl_ult / acoes_mi) > 1000:
                 avisos.append("Quantidade de ações incomum: confira antes de analisar.")
         base = {
-            "_fonte": "CVM – Dados Abertos, DFP consolidada (R$ milhões)",
+            "_fonte": "CVM – Dados Abertos, DFP (R$ milhões)",
             "_atualizado": hoje,
             "_avisos": avisos,
             "nome": nomes.get(cd, ""),
